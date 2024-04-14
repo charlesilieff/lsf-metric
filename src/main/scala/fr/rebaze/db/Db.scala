@@ -13,8 +13,8 @@ object Db:
     poolConfig.setUsername(dbConfig.user)
     poolConfig.setPassword(dbConfig.password)
     poolConfig.setSchema(dbConfig.schema)
-    poolConfig.addDataSourceProperty("databaseName", "chartres_cms");
-    poolConfig.addDataSourceProperty("portNumber", 35432);
+    poolConfig.addDataSourceProperty("databaseName", dbConfig.database);
+    poolConfig.addDataSourceProperty("portNumber", dbConfig.port);
     poolConfig.addDataSourceProperty("serverName", "localhost");
     poolConfig.setDataSourceClassName("org.postgresql.ds.PGSimpleDataSource")
     new HikariDataSource(poolConfig)
@@ -32,5 +32,5 @@ object Db:
     }
 
   // Quill framework object used for specifying sql queries.
-  val quillLive: ZLayer[DataSource, Nothing, Quill.Postgres[SnakeCase]] =
-    Quill.Postgres.fromNamingStrategy(SnakeCase)
+  val quillLive: ZLayer[DataSource, Nothing, Quill.Postgres[CamelCase]] =
+    Quill.Postgres.fromNamingStrategy(CamelCase)

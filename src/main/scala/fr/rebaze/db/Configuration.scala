@@ -21,7 +21,8 @@ final case class DatabaseConfig(
   password: String,
   port: Int,
   database: String,
-  schema: String
+  schema: String,
+  serverName:String
 )
 
 object Configuration:
