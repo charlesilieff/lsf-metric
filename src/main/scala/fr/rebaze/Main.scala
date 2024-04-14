@@ -1,6 +1,9 @@
 package fr.rebaze
 
 
+import fr.rebaze.adapters.SessionRepositoryLive
+import fr.rebaze.db.*
+import fr.rebaze.domain.ports.SessionRepository
 import sttp.tapir.server.interceptor.cors.CORSConfig.AllowedOrigin
 import sttp.tapir.server.interceptor.cors.{CORSConfig, CORSInterceptor}
 import sttp.tapir.server.ziohttp
@@ -29,14 +32,21 @@ object Main extends ZIOAppDefault:
       )
       .options
     val app: HttpApp[Any] = ZioHttpInterpreter(options).toHttp(Endpoints.all)
+    val sessionsApp = ZioHttpInterpreter(options).toHttp(Endpoints.sessionEndpoint)
+    val all:HttpApp[SessionRepository] = app ++ sessionsApp
 
     (for
-      actualPort <- Server.install(app) // or .serve if you don't need the port and want to keep it running without manual readLine
+      actualPort <- Server.install(all) // or .serve if you don't need the port and want to keep it running without manual readLine
       _ <- Console.printLine(s"Go to http://localhost:${actualPort}/docs to open" +
         s"n SwaggerUI. Press ENTER key to exit.")
       _ <- ZIO.never
     yield ())
       .provide(
-        Server.defaultWithPort(port)
+        Configuration.live,
+        DbConfig.live,
+        Db.dataSourceLive,
+        Db.quillLive,
+        Server.defaultWithPort(port),
+        SessionRepositoryLive.layer
       )
       .exitCode

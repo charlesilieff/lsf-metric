@@ -18,7 +18,11 @@ lazy val rootProject = (project in file(".")).settings(
       "com.softwaremill.sttp.tapir"   %% "tapir-sttp-stub-server"   % tapirVersion % Test,
       "dev.zio"                       %% "zio-test"                 % "2.0.13"     % Test,
       "dev.zio"                       %% "zio-test-sbt"             % "2.0.13"     % Test,
-      "com.softwaremill.sttp.client3" %% "zio-json"                 % "3.9.5"      % Test
+      "dev.zio"                       %% "zio-config-typesafe"      % "4.0.1",
+      "dev.zio"                       %% "zio-config-magnolia"      % "4.0.1",
+      "com.softwaremill.sttp.client3" %% "zio-json"                 % "3.9.5"      % Test,
+      "io.getquill"                   %% "quill-jdbc-zio"           % "4.8.3",
+      "org.postgresql"                 % "postgresql"               % "42.7.3"
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
