@@ -10,3 +10,4 @@ target/
 metals.sbt
 sessioS3
 project/project
+.DS_Store
