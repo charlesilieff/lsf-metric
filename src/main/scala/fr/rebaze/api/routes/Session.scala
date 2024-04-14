@@ -1,11 +1,8 @@
 package fr.rebaze.api.routes
 
-import sttp.tapir.Endpoint
-
 import fr.rebaze.models.Session
-
-import sttp.tapir.ztapir.*
 import sttp.model.StatusCode
+import sttp.tapir.Endpoint
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*

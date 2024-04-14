@@ -1,5 +1,12 @@
 ## Quick start
 
+Configure IntelliJ IDEA to use the provided sbt wrapper script:
+
+Go
+to  `File -> Settings -> Build, Execution, Deployment -> Compiler -> Uncheck "Automatically show first error in editor" and "Build project automatically" -> Apply -> OK`
+
+Then go to `Build tool -> BSP -> Check "build automatically on save"`
+
 If you don't have [sbt](https://www.scala-sbt.org) installed already, you can use the provided wrapper script:
 
 ```shell
