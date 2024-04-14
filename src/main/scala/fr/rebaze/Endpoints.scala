@@ -1,8 +1,8 @@
 package fr.rebaze
 
 import sttp.tapir.*
-
 import Library.*
+import fr.rebaze.api.routes.Session.sessionLive
 import sttp.tapir.Codec.JsonCodec
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.zio.*
@@ -30,7 +30,7 @@ object Endpoints:
     .out(jsonBody[List[Book]])
   val booksListingServerEndpoint: ZServerEndpoint[Any, Any] = booksListing.serverLogicSuccess(_ => ZIO.succeed(Library.books))
 
-  val apiEndpoints: List[ZServerEndpoint[Any, Any]] = List(helloServerEndpoint, booksListingServerEndpoint)
+  val apiEndpoints: List[ZServerEndpoint[Any, Any]] = List(helloServerEndpoint, booksListingServerEndpoint,sessionLive)
 
   val docEndpoints: List[ZServerEndpoint[Any, Any]] = SwaggerInterpreter()
     .fromServerEndpoints[Task](apiEndpoints, "lsf-metrics", "1.0.0")
