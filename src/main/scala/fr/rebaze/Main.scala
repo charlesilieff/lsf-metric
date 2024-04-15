@@ -42,11 +42,8 @@ object Main extends ZIOAppDefault:
       _ <- ZIO.never
     yield ())
       .provide(
-        Configuration.live,
-        DbConfig.live,
-        Db.dataSourceLive,
-        Db.quillLive,
+       
         Server.defaultWithPort(port),
-        SessionRepositoryLive.layer
+        Layer.prodLayer
       )
       .exitCode

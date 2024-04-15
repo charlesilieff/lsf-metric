@@ -5,8 +5,7 @@ import fr.rebaze.models.Session
 import zio.*
 
 trait SessionRepository:
-  def getSessionByGuid(guid: String): Task[Session]
-  
+  def getSessionByActorGuid(guid: String): Task[Option[Session]]
 object SessionRepository:
-  def getSessionByGuid(guid: String): RIO[SessionRepository, Session]   =
-    ZIO.serviceWithZIO[SessionRepository](_.getSessionByGuid(guid))
+  def getSessionByActorGuid(guid: String): RIO[SessionRepository, Option[Session]] =
+    ZIO.serviceWithZIO[SessionRepository](_.getSessionByActorGuid(guid))

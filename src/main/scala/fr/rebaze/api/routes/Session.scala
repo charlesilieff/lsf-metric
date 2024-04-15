@@ -1,5 +1,6 @@
 package fr.rebaze.api.routes
 
+import fr.rebaze.common.Exceptions.NotFound
 import fr.rebaze.domain.ports.SessionRepository
 import fr.rebaze.models.Session
 import sttp.model.StatusCode
@@ -22,4 +23,6 @@ object Session:
       .out(jsonBody[Session])
 
   val sessionLive: ZServerEndpoint[SessionRepository, Any] = findOneGuid
-    .serverLogicSuccess(guid => SessionRepository.getSessionByGuid(guid))
+    .serverLogicSuccess(guid => SessionRepository.getSessionByActorGuid(guid).someOrFail(NotFound(SessionNotFoundMessage(guid))))
+  
+  private def SessionNotFoundMessage(guid: String): String = s"Session with guid ${guid} doesn't exist."

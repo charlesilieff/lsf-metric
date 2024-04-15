@@ -22,6 +22,7 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
 
   inline private def queryArticle                                 = quote(
     querySchema[SessionRow](entity = "SessionInteractionsWithAutoincrementId", _.actorGuid -> "actorGuid", _.levelGuid -> "levelGuid"))
-  override def getSessionByGuid(guid: String): Task[SessionModel] =
-    run(queryArticle.filter(_.actorGuid == lift(guid)).take(1))
-      .tap(x => ZIO.logInfo(s"Found $x")).as(new SessionModel("totto", "rrrr", "rrrr", None))
+  override def getSessionByActorGuid(actorGuid: String): Task[Option[SessionModel]] =
+    run(queryArticle.filter(_.actorGuid == lift(actorGuid)).take(1))
+      .tap(x => ZIO.logInfo(s"Found $x")).map(value => value.headOption.map(session=> new SessionModel ("totto", actorGuid =
+        session.actorGuid, "rrrr", None)))
