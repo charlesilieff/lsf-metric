@@ -2,9 +2,7 @@ package fr.rebaze.models
 
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder}
 
-import java.util.UUID
-
-case class Interaction(ruleId: String, correct: Boolean, progress: Float, timestamp: String, exerciseId: UUID)
+case class Interaction(ruleId: String, correct: Boolean, progress: Option[Float], timestamp: BigInt, exerciseId: String)
 
 object Interaction:
   given interactionZioEncoder: zio.json.JsonEncoder[Interaction] = DeriveJsonEncoder.gen[Interaction]

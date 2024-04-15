@@ -2,7 +2,7 @@ package fr.rebaze.models
 
 import zio.json.{DeriveJsonCodec, DeriveJsonDecoder, DeriveJsonEncoder, JsonCodec}
 
-case class Session(guid: String, actorGuid: String, levelGuid: String, interaction: Option[Interaction])
+case class Session(guid: String, actorGuid: String, levelGuid: String, interaction: Interaction)
 
 object Session:
   given sessionZioEncoder: zio.json.JsonEncoder[Session] = DeriveJsonEncoder.gen[Session]
