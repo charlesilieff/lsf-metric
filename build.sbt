@@ -21,6 +21,7 @@ lazy val rootProject = (project in file(".")).settings(
       "dev.zio"                       %% "zio-config-typesafe"      % "4.0.1",
       "dev.zio"                       %% "zio-config-magnolia"      % "4.0.1",
       "com.softwaremill.sttp.client3" %% "zio-json"                 % "3.9.5"      % Test,
+      "dev.zio"                       %% "zio-nio"                  % "2.0.2",
       "io.getquill"                   %% "quill-jdbc-zio"           % "4.8.3",
       "org.postgresql"                 % "postgresql"               % "42.7.3"
     ),
