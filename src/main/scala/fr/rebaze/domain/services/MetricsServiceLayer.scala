@@ -2,6 +2,7 @@ package fr.rebaze.domain.services
 
 import fr.rebaze.domain.ports.SessionRepository
 import fr.rebaze.domain.services.models.Metric
+import fr.rebaze.domain.services.models.UserTenant.*
 import fr.rebaze.models.UserFirstnameAndLastname
 import zio.{Task, ZIO, ZLayer}
 
@@ -16,9 +17,13 @@ final case class MetricsServiceLayer(sessionRepository: SessionRepository) exten
       userIds <- sessionRepository.getUsersByDay(day)
       metrics <- ZIO.foreachPar(userIds) { userId =>
                    for {
-                     nameAndFirstName <-
-                       if userId.actorGuid.contains("@voltaire") then ZIO.succeed(UserFirstnameAndLastname( None, None))
-                       else sessionRepository.getUsersNameAndFirstName(userId.actorGuid)
-                   } yield Metric(userId = userId.actorGuid, lastname = nameAndFirstName.lastname, firstname = nameAndFirstName.firstname)
+                     (nameAndFirstName, userTenant) <-
+                       if userId.actorGuid.contains("@voltaire") then ZIO.succeed((UserFirstnameAndLastname(None, None), Voltaire))
+                       else sessionRepository.getUsersNameAndFirstName(userId.actorGuid).map((_, Lsf))
+                   } yield Metric(
+                     userId = userId.actorGuid,
+                     lastname = nameAndFirstName.lastname,
+                     firstname = nameAndFirstName.firstname,
+                     userTenant)
                  }
     } yield metrics
