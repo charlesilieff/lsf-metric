@@ -32,22 +32,20 @@ object MetricsServiceLayer:
   val layer: ZLayer[SessionRepository, Nothing, MetricsServiceLayer] =
     ZLayer.fromFunction(MetricsServiceLayer(_))
 final case class MetricsServiceLayer(sessionRepository: SessionRepository) extends MetricsService:
-  override def extractRulesIdFromJsonDirectExport(path: String): Task[Seq[String]] =
+  override val extractRulesIdFromJsonDirectExport: Task[Seq[String]] =
     val currentPath = System.getProperty("user.dir")
     val fileNames   = List("json_direct_export_4.json", "json_direct_export_5.json", "json_direct_export_6.json")
-    
+
     val filePaths = fileNames.map(name => URI.create(s"file:///$currentPath/src/main/resources/rules/$name"))
-
-    val files = ZIO
-      .foreachPar(filePaths)(filePath => Files.readAllBytes(Path(filePath))).mapBoth(e => NotFound(e.getMessage), {
-        bytes =>
-          bytes.map(byte => new String(byte.toArray, "UTF-8"))
-      })
-
-    val toto = files
-      .flatMap(files => ZIO.foreachPar(files)(file => ZIO.fromEither(file.fromJson[Application]).mapError(e => NotFound(e)))).map(files =>
-        files.map(_.levels)).map(files => files.map(_.flatMap(_.rules)).flatMap(_.map(_.guid)))
-    toto
+    for {
+      files <- ZIO
+                 .foreachPar(filePaths)(filePath => Files.readAllBytes(Path(filePath))).mapBoth(
+                   e => NotFound(e.getMessage),
+                   bytes => bytes.map(byte => new String(byte.toArray, "UTF-8")))
+      rules <- ZIO
+                 .foreachPar(files)(file => ZIO.fromEither(file.fromJson[Application]).mapError(e => NotFound(e))).map(files =>
+                   files.map(_.levels)).map(files => files.map(_.flatMap(_.rules)).flatMap(_.map(_.guid)))
+    } yield rules
 
   override def getMetricsByDay(day: LocalDate): Task[Seq[Metric]] =
     for {
@@ -64,3 +62,6 @@ final case class MetricsServiceLayer(sessionRepository: SessionRepository) exten
                      userTenant)
                  }
     } yield metrics
+
+  override def getGlobalProgressByUserId(userId: String): Task[Float] =
+    extractRulesIdFromJsonDirectExport.map(rules => rules).as(0.23f)

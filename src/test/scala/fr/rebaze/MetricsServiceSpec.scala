@@ -22,7 +22,7 @@ object MetricsServiceSpec extends ZIOSpecDefault:
     test("read all rules id") {
       // given
       val metrics = MetricsService
-        .extractRulesIdFromJsonDirectExport("ivi").tap(values => ZIO.logInfo(s"Metrics: ${values}"))
+        .extractRulesIdFromJsonDirectExport.tap(values => ZIO.logInfo(s"Metrics: ${values}"))
 
       // then
       assertZIO(metrics)(isNonEmpty)

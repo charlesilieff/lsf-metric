@@ -7,10 +7,14 @@ import java.time.LocalDate
 
 trait MetricsService:
   def getMetricsByDay(day: LocalDate): Task[Seq[Metric]]
-  def extractRulesIdFromJsonDirectExport(path: String): Task[Seq[String]]
+  val extractRulesIdFromJsonDirectExport: Task[Seq[String]]
+  def getGlobalProgressByUserId(userId: String): Task[Float]
 object MetricsService:
   def getMetricsByDay(day: LocalDate): RIO[MetricsService, Seq[Metric]] =
     ZIO.serviceWithZIO[MetricsService](_.getMetricsByDay(day))
 
-  def extractRulesIdFromJsonDirectExport(path: String): RIO[MetricsService, Seq[String]] =
-    ZIO.serviceWithZIO[MetricsService](_.extractRulesIdFromJsonDirectExport(path))
+  val extractRulesIdFromJsonDirectExport: RIO[MetricsService, Seq[String]] =
+    ZIO.serviceWithZIO[MetricsService](_.extractRulesIdFromJsonDirectExport)
+
+  def getGlobalProgressByUserId(userId: String): RIO[MetricsService, Float] =
+    ZIO.serviceWithZIO[MetricsService](_.getGlobalProgressByUserId(userId))
