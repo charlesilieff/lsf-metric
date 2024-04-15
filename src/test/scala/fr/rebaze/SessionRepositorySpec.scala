@@ -12,17 +12,17 @@ object SessionRepositorySpec extends ZIOSpecDefault:
   def spec = suite("Session Repo")(
     test("return NoSuchSessionException when session not found") {
       // given
-      val noSuchElementException = SessionRepository.getSessionByActorGuid("123")
+      val noSuchElementException = SessionRepository.getAllSessionsByActorGuid("123")
 
       // then
-      assertZIO(noSuchElementException)(isNone)
+      assertZIO(noSuchElementException)(isEmpty)
     },
     test("return a session when a guid session found") {
       // given
-      val session = SessionRepository.getSessionByActorGuid("9491340@voltaire")
+      val sessions = SessionRepository.getAllSessionsByActorGuid("9491340@voltaire")
 
       // then
-      assertZIO(session)(isSome)
+      assertZIO(sessions)(isNonEmpty)
     },
     test("return all users in a day") {
       // given

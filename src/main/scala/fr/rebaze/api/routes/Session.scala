@@ -23,6 +23,6 @@ object Session:
       .out(jsonBody[Session])
 
   val sessionLive: ZServerEndpoint[SessionRepository, Any] = findOneGuid
-    .serverLogicSuccess(guid => SessionRepository.getSessionByActorGuid(guid).someOrFail(NotFound(SessionNotFoundMessage(guid))))
+    .serverLogicSuccess(guid => SessionRepository.getAllSessionsByActorGuid(guid).map(sessions=>sessions.headOption).someOrFail(NotFound(SessionNotFoundMessage(guid))))
   
   private def SessionNotFoundMessage(guid: String): String = s"Session with guid ${guid} doesn't exist."

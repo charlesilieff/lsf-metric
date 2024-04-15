@@ -40,11 +40,11 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
         millisecondsTimestamp)} AND (interaction->>'timestamp')::bigint < ${lift(millisecondsTimestamp + MILLI_SECONDS_IN_DAY)})"""
       .as[Query[UserRow]]
   }
-  override def getSessionByActorGuid(actorGuid: String): Task[Option[SessionModel]] =
-    run(queryArticle.filter(_.actorGuid == lift(actorGuid)).take(1))
-      .tap(x => ZIO.logInfo(s"Found $x")).map(value =>
-        value
-          .headOption.map(session =>
+  override def getAllSessionsByActorGuid(actorGuid: String): Task[Seq[SessionModel]] =
+    run(queryArticle.filter(_.actorGuid == lift(actorGuid)))
+      .tap(x => ZIO.logInfo(s"Found $x")).map(values =>
+        values
+          .map(session =>
             new SessionModel(session.guid, actorGuid = session.actorGuid, session.levelGuid, session.interaction.value)))
 
   override def getUsersByDay(day: LocalDate): Task[Seq[User]] =
