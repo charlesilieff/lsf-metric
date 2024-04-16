@@ -8,8 +8,6 @@ import zio.{Config, ZLayer}
 
 import javax.sql.DataSource
 
-object Layer {
-  val prodLayer
-    : ZLayer[Any, Config.Error, AppConfig with DbConfig with DataSource with Quill.Postgres[CamelCase] with SessionRepositoryLive] =
+object Layer:
+  val prodLayer: ZLayer[Any, Config.Error, AppConfig & DbConfig & DataSource & Quill.Postgres[CamelCase] & SessionRepositoryLive] =
     Configuration.live >+> DbConfig.live >+> Db.dataSourceLive >+> Db.quillLive >+> SessionRepositoryLive.layer
-}

@@ -1,13 +1,13 @@
 package fr.rebaze.db
 
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
-import io.getquill.CamelCase
-import io.getquill.jdbczio.Quill
+import io.getquill.*
+import io.getquill.jdbczio.*
 import zio.{ZIO, ZLayer}
 
 import javax.sql.DataSource
 
-object Db {
+object Db:
   private def create(dbConfig: DbConfig): HikariDataSource = {
     val poolConfig = new HikariConfig()
     poolConfig.setUsername(dbConfig.user)
@@ -34,4 +34,3 @@ object Db {
   // Quill framework object used for specifying sql queries.
   val quillLive: ZLayer[DataSource, Nothing, Quill.Postgres[CamelCase]] =
     Quill.Postgres.fromNamingStrategy(CamelCase)
-}

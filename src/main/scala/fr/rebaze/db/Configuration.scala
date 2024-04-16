@@ -1,8 +1,8 @@
 package fr.rebaze.db
 
+import zio.ZLayer
+import zio._
 import zio.config.magnolia._
-import zio.config.typesafe.TypesafeConfigProvider
-import zio.{ZLayer, _}
 
 final case class RootConfig(
   config: AppConfig
@@ -22,10 +22,11 @@ final case class DatabaseConfig(
   port: Int,
   database: String,
   schema: String,
-  serverName: String
+  serverName:String
 )
 
-object Configuration {
+object Configuration:
+  import zio.config.typesafe.*
+
   val live: ZLayer[Any, Config.Error, AppConfig] =
     ZLayer.fromZIO(TypesafeConfigProvider.fromResourcePath().load(deriveConfig[RootConfig]).map(_.config))
-}
