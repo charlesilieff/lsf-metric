@@ -6,6 +6,7 @@ case class RawEvents(
   interaction: Interaction,
   levelGuid: String
 )
+
 case class Interaction(
   ruleId: String,
   correct: Boolean,

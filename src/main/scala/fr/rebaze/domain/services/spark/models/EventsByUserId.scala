@@ -1,6 +1,8 @@
 package fr.rebaze.domain.services.spark.models
 
-//import org.apache.spark.sql.{DataFrame, Dataset, Encoder, Encoders}
+//
+//import org.apache.spark.sql.Encoder
+//
 case class EventsByUserId(
   // actorGuid
   userId: String,
@@ -9,7 +11,4 @@ case class EventsByUserId(
   // timestamp interaction
   timestamp: Long
 )
-//object EventsByUserId {
-//  given eventsByUserIdEncoder: Encoder[EventsByUserId] =
-//    Encoders.product[EventsByUserId]
-//}
+//

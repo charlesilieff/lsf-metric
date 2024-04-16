@@ -26,10 +26,13 @@ lazy val rootProject = (project in file(".")).settings(
       ("io.getquill"                  %% "quill-jdbc-zio"             % "4.8.3").exclude("org.scala-lang.modules", "scala-parallel-collections_3"),
       ("org.scala-lang.modules"       %% "scala-parallel-collections" % "1.0.4"      % "provided").cross(CrossVersion.for3Use2_13),
       "org.postgresql"                 % "postgresql"                 % "42.7.3",
-      ("org.apache.spark"             %% "spark-sql"                  % sparkVersion % "provided").cross(CrossVersion.for3Use2_13)
+      ("org.apache.spark"             %% "spark-sql"                  % sparkVersion % "provided").cross(CrossVersion.for3Use2_13),
+      ("org.apache.spark"             %% "spark-core"                 % sparkVersion).cross(CrossVersion.for3Use2_13),
       // ("com.github.pureconfig"        %% "pureconfig"                 % "0.17.1").cross(CrossVersion.for3Use2_13),
       // "org.apache.hadoop"              % "hadoop-client"              % "3.4.0"      % Provided,
-      // ("io.github.vincenzobaz"        %% "spark-scala3"               % "0.2.1").exclude("org.apache.spark", "spark-sql_2.13")
+      "io.github.vincenzobaz"         %% "spark-scala3-encoders"      % "0.2.6",
+      "io.github.vincenzobaz"         %% "spark-scala3-udf"           % "0.2.6",
+      "io.github.vincenzobaz"         %% "spark-scala3"               % "0.2.1"
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
