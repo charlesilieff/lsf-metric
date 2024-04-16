@@ -32,7 +32,7 @@ object MetricsServiceLayer:
   val layer: ZLayer[SessionRepository, Nothing, MetricsServiceLayer] =
     ZLayer.fromFunction(MetricsServiceLayer(_))
 final case class MetricsServiceLayer(sessionRepository: SessionRepository) extends MetricsService:
-  override val extractRulesIdFromJsonDirectExport: Task[Seq[String]] =
+  override val extractRulesIdFromJsonDirectExport: Task[Iterable[String]] =
     val currentPath = System.getProperty("user.dir")
     val fileNames   = List("json_direct_export_4.json", "json_direct_export_5.json", "json_direct_export_6.json")
 
@@ -47,22 +47,26 @@ final case class MetricsServiceLayer(sessionRepository: SessionRepository) exten
                    files.map(_.levels)).map(files => files.map(_.flatMap(_.rules)).flatMap(_.map(_.guid)))
     } yield rules
 
-  override def getUsersGlobalProgressByDay(day: LocalDate): Task[Seq[UserProgress]] =
+  override def getUsersProgressByDay(day: LocalDate): Task[Iterable[UserProgress]] =
     for {
       userIds <- sessionRepository.getUsersWithRulesTrainedByDay(day)
 
-      metrics <- ZIO.foreachPar(userIds) { userId =>
+      metrics <- ZIO.foreachPar(userIds) { userIdAndRulesIds =>
                    for {
                      (nameAndFirstName, userTenant) <-
-                       if userId.actorGuid.contains("@voltaire") then ZIO.succeed((UserFirstnameAndLastname(None, None), Voltaire))
-                       else sessionRepository.getUsersNameAndFirstName(userId.actorGuid).map((_, Lsf))
-                     globalProgress                 <- getGlobalProgressByUserId(userId.actorGuid)
+                       if userIdAndRulesIds.actorGuid.contains("@voltaire") then
+                         ZIO.succeed((UserFirstnameAndLastname(None, None), Voltaire))
+                       else sessionRepository.getUsersNameAndFirstName(userIdAndRulesIds.actorGuid).map((_, Lsf))
+                     globalProgress                 <- getGlobalProgressByUserId(userIdAndRulesIds.actorGuid)
                    } yield UserProgress(
-                     actorGuid = userId.actorGuid,
+                     actorGuid = userIdAndRulesIds.actorGuid,
                      lastname = nameAndFirstName.lastname,
                      firstname = nameAndFirstName.firstname,
                      userTenant,
-                     globalProgress)
+                     globalProgress,
+                     // This not good !!
+                     levelProgress = userIdAndRulesIds.levelProgress
+                   )
                  }
     } yield metrics.toSeq
 
@@ -71,11 +75,11 @@ final case class MetricsServiceLayer(sessionRepository: SessionRepository) exten
       rulesProgressByUserId <- sessionRepository.getRulesProgressByUserId(userId)
       rules                 <- extractRulesIdFromJsonDirectExport
       rulesCount             = rules.size
-      progressExistingRules  = rulesProgressByUserId.progress.filter((ruleId, _) => rules.contains(ruleId))
+      progressExistingRules  = rulesProgressByUserId.progress.filter((ruleId, _) => rules.toSeq.contains(ruleId))
       average                = progressExistingRules.values.sum / rulesCount
     } yield average
 
   // TODO: delete this method
-  override def getLevelIdsByUserIdByDay(userId: String, day: LocalDate): Task[Seq[String]] =
-    sessionRepository.getLevelIdsByUserIdByDay(userId, day)
+  override def getLevelIdsByUserIdByDay(userId: String, day: LocalDate): Task[Iterable[String]] =
+//    sessionRepository.getLevelIdsByUserIdByDay(userId, day)
     ZIO.succeed(List.empty)

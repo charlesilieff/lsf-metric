@@ -6,21 +6,20 @@ import zio.*
 import java.time.LocalDate
 
 trait MetricsService:
-  def getUsersGlobalProgressByDay(day: LocalDate): Task[Seq[UserProgress]]
-  val extractRulesIdFromJsonDirectExport: Task[Seq[String]]
+  def getUsersProgressByDay(day: LocalDate): Task[Iterable[UserProgress]]
+  val extractRulesIdFromJsonDirectExport: Task[Iterable[String]]
   def getGlobalProgressByUserId(userId: String): Task[Double]
-  def getLevelIdsByUserIdByDay(userId: String, day: LocalDate): Task[Seq[String]]
+  def getLevelIdsByUserIdByDay(userId: String, day: LocalDate): Task[Iterable[String]]
 object MetricsService:
-  def getUsersGlobalProgressByDay(day: LocalDate): RIO[MetricsService, Seq[UserProgress]] =
+  def getUsersProgressByDay(day: LocalDate): RIO[MetricsService, Iterable[UserProgress]] =
     ZIO
-      .serviceWithZIO[MetricsService](_.getUsersGlobalProgressByDay(day)).tap(value =>
-        ZIO.logInfo(s"Metrics for $day and ${value.length} users"))
+      .serviceWithZIO[MetricsService](_.getUsersProgressByDay(day)).tap(value => ZIO.logInfo(s"Metrics for $day and ${value.size} users"))
 
-  val extractRulesIdFromJsonDirectExport: RIO[MetricsService, Seq[String]] =
+  val extractRulesIdFromJsonDirectExport: RIO[MetricsService, Iterable[String]] =
     ZIO.serviceWithZIO[MetricsService](_.extractRulesIdFromJsonDirectExport)
 
   def getGlobalProgressByUserId(userId: String): RIO[MetricsService, Double] =
     ZIO.serviceWithZIO[MetricsService](_.getGlobalProgressByUserId(userId))
 
-  def getLevelIdsByUserIdByDay(userId: String, day: LocalDate): RIO[MetricsService, Seq[String]] =
+  def getLevelIdsByUserIdByDay(userId: String, day: LocalDate): RIO[MetricsService, Iterable[String]] =
     ZIO.serviceWithZIO[MetricsService](_.getLevelIdsByUserIdByDay(userId, day))

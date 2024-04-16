@@ -1,6 +1,8 @@
 package fr.rebaze.api.routes
 
+import fr.rebaze.adapters.LevelId
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder}
+import zio.prelude.Newtype
 
 case class SessionMetric(
   userId: String,
@@ -10,13 +12,14 @@ case class SessionMetric(
   trainingDuration: Long,
   completionPercentage: Double,
   lastUseDate: Long,
-  levelProgress: List[LevelProgress])
+  levelProgress: Map[String, LevelProgressAndDuration])
 
+case class LevelProgressAndDuration(completionPercentage: Double)
+
+object LevelProgressAndDuration:
+  given sessionZioEncoder: zio.json.JsonEncoder[LevelProgressAndDuration] = DeriveJsonEncoder.gen[LevelProgressAndDuration]
+
+  given sessionZioDecoder: zio.json.JsonDecoder[LevelProgressAndDuration] = DeriveJsonDecoder.gen[LevelProgressAndDuration]
 object SessionMetric:
   given sessionZioEncoder: zio.json.JsonEncoder[SessionMetric] = DeriveJsonEncoder.gen[SessionMetric]
   given sessionZioDecoder: zio.json.JsonDecoder[SessionMetric] = DeriveJsonDecoder.gen[SessionMetric]
-case class LevelProgress(levelId: String, completionPercentage: Int)
-
-object LevelProgress:
-  given sessionZioEncoder: zio.json.JsonEncoder[LevelProgress] = DeriveJsonEncoder.gen[LevelProgress]
-  given sessionZioDecoder: zio.json.JsonDecoder[LevelProgress] = DeriveJsonDecoder.gen[LevelProgress]

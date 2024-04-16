@@ -1,5 +1,7 @@
 package fr.rebaze.domain.services.models
 
+import fr.rebaze.adapters.LevelProgress
+
 enum UserTenant:
   case Lsf, Voltaire
 case class UserProgress(
@@ -7,4 +9,5 @@ case class UserProgress(
   lastname: Option[String],
   firstname: Option[String],
   userTenant: UserTenant,
-  globalProgress: Double)
+  completionPercentage: Double,
+  levelProgress: Iterable[LevelProgress])

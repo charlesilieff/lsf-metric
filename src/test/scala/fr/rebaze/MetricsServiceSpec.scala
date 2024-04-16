@@ -12,7 +12,7 @@ object MetricsServiceSpec extends ZIOSpecDefault:
     test("get metrics by day") {
       // given
       val metrics = MetricsService
-        .getUsersGlobalProgressByDay(LocalDate.of(2024, 1, 16)).tap(values =>
+        .getUsersProgressByDay(LocalDate.of(2024, 1, 16)).tap(values =>
           ZIO.logInfo(s"Metrics: ${values.filter(metric => !metric.actorGuid.contains("@voltaire"))}"))
 
       // then

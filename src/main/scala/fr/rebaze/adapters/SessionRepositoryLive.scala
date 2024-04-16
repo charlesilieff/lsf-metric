@@ -5,6 +5,9 @@ import fr.rebaze.domain.ports.models.RulesProgressByUserId
 import fr.rebaze.models.{Interaction, UserFirstnameAndLastname, UserWithRules, Session as SessionModel}
 import io.getquill.*
 import io.getquill.jdbczio.Quill
+import sttp.tapir.codec.zio.prelude.newtype.TapirNewtypeSupport
+import zio.json.*
+import zio.prelude.Newtype
 import zio.{Task, ZIO, ZLayer}
 
 import java.sql.Timestamp
@@ -17,21 +20,33 @@ case class SessionRow(
   interaction: JsonValue[Interaction]
 )
 
-case class UserWithRuleIdRow(
-  actorGuid: String,
-  ruleId: String
-)
-
 case class AccountRow(
   email: String,
   name: String,
   surname: String
 )
 
-case class UserAndInteractionRow(
+object LevelId extends Newtype[String] with TapirNewtypeSupport[String]:
+  implicit val codec: JsonCodec[Type] = derive
+type LevelId = LevelId.Type
+
+case class ActorAndInteractionAndLevelGuidRow(
+  actorGuid: String,
+  levelGuid: String,
+  interaction: JsonValue[Interaction]
+)
+
+case class ActorAndInteractionRow(
   actorGuid: String,
   interaction: JsonValue[Interaction]
 )
+
+case class LevelProgress(levelId: LevelId, completionPercentage: Double)
+
+object LevelProgress:
+  given sessionZioEncoder: zio.json.JsonEncoder[LevelProgress] = DeriveJsonEncoder.gen[LevelProgress]
+
+  given sessionZioDecoder: zio.json.JsonDecoder[LevelProgress] = DeriveJsonDecoder.gen[LevelProgress]
 val MILLI_SECONDS_IN_DAY = 86400000
 
 object SessionRepositoryLive:
@@ -40,20 +55,20 @@ object SessionRepositoryLive:
 final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends SessionRepository:
   import quill.*
 
-  inline private def querySession                                                        = quote(
+  inline private def querySession                                                                         = quote(
     querySchema[SessionRow](entity = "SessionInteractionsWithAutoincrementId", _.actorGuid -> "actorGuid", _.levelGuid -> "levelGuid"))
-  def sessionTimeStampRow(millisecondsTimestamp: Long): Quoted[Query[UserWithRuleIdRow]] = quote {
-    sql"""SELECT actorguid,interaction FROM sessioninteractionswithautoincrementid WHERE ((interaction->>'timestamp')::bigint > ${lift(
+  def sessionTimeStampRow(millisecondsTimestamp: Long): Quoted[Query[ActorAndInteractionAndLevelGuidRow]] = quote {
+    sql"""SELECT actorguid, levelguid, interaction FROM sessioninteractionswithautoincrementid WHERE ((interaction->>'timestamp')::bigint > ${lift(
         millisecondsTimestamp)} AND (interaction->>'timestamp')::bigint < ${lift(millisecondsTimestamp + MILLI_SECONDS_IN_DAY)})"""
-      .as[Query[UserWithRuleIdRow]]
+      .as[Query[ActorAndInteractionAndLevelGuidRow]]
   }
 
-  def progressAndActorGuidRow(actorGuid: String): Quoted[Query[UserAndInteractionRow]] = quote {
+  def progressAndActorGuidRow(actorGuid: String): Quoted[Query[ActorAndInteractionRow]]   = quote {
     sql"""SELECT DISTINCT actorguid, interaction FROM sessioninteractionswithautoincrementid WHERE actorguid = ${lift(
         actorGuid)} AND (interaction->>'progress')::float > 0"""
-      .as[Query[UserAndInteractionRow]]
+      .as[Query[ActorAndInteractionRow]]
   }
-  override def getAllSessionsByActorGuid(actorGuid: String): Task[Seq[SessionModel]]   =
+  override def getAllSessionsByActorGuid(actorGuid: String): Task[Iterable[SessionModel]] =
     run(querySession.filter(_.actorGuid == lift(actorGuid)))
       .tap(x => ZIO.logDebug(s"Found ${x.length}")).map(values =>
         values
@@ -64,8 +79,21 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
     val timestampsInMilliSeconds = timestamp.getTime
 
     run(sessionTimeStampRow(timestampsInMilliSeconds))
-      .tap(x => ZIO.logInfo(s"Found ${x.length} users")).map(_.groupBy(_.actorGuid).map(session =>
-        new UserWithRules(session._1, session._2.map(_.ruleId))))
+      .tap(x => ZIO.logInfo(s"Found ${x.length} users")).map(_.groupBy(_.actorGuid).map(userAndLevelAndInteraction =>
+
+        val levelsProgress = userAndLevelAndInteraction
+          ._2.foldLeft[Seq[(LevelId, Double)]](List.empty) {
+            case (acc, userAndInteraction) =>
+              acc.find(_._1 == LevelId(userAndInteraction.levelGuid)) match {
+                case Some((levelId, maxProgress)) =>
+                  if (userAndInteraction.interaction.value.progress.getOrElse(0d) > maxProgress)
+                    (levelId, userAndInteraction.interaction.value.progress.getOrElse(0d)) +: acc.filterNot(_._1 == levelId)
+                  else acc
+                case None                         => (LevelId(userAndInteraction.levelGuid), userAndInteraction.interaction.value.progress.getOrElse(0)) +: acc
+              }
+          }
+        new UserWithRules(userAndLevelAndInteraction._1, levelsProgress.map((ruleId, progress) => LevelProgress(ruleId, progress)))
+      ))
 
   override def getUsersNameAndFirstName(userId: String): Task[UserFirstnameAndLastname] =
     // remove "@lsf" at the end of userId :
@@ -99,4 +127,4 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
     maxProgressByRuleId
       .map((userId, interactions) => RulesProgressByUserId(userId, interactions.toMap))
 
-  override def getLevelIdsByUserIdByDay(userId: String, day: LocalDate): Task[Seq[String]] = ???
+  override def getLevelIdsByUserIdByDay(userId: String, day: LocalDate): Task[Iterable[String]] = ???
