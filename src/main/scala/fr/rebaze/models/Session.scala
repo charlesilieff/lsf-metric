@@ -4,9 +4,10 @@ import zio.json.{DeriveJsonCodec, DeriveJsonDecoder, DeriveJsonEncoder, JsonCode
 
 case class Session(guid: String, actorGuid: String, levelGuid: String, interaction: Interaction)
 
-object Session:
-  given sessionZioEncoder: zio.json.JsonEncoder[Session] = DeriveJsonEncoder.gen[Session]
-  given sessionZioDecoder: zio.json.JsonDecoder[Session] = DeriveJsonDecoder.gen[Session]
+object Session {
+  implicit val sessionZioEncoder: zio.json.JsonEncoder[Session] = DeriveJsonEncoder.gen[Session]
+  implicit val sessionZioDecoder: zio.json.JsonDecoder[Session] = DeriveJsonDecoder.gen[Session]
 
-  given JsonCodec[Session] =
+  implicit val codec: JsonCodec[Session] =
     DeriveJsonCodec.gen[Session]
+}

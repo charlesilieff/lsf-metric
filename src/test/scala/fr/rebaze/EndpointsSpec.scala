@@ -1,18 +1,16 @@
 package fr.rebaze
 
-import fr.rebaze.Endpoints.{*, given}
+import fr.rebaze.Endpoints.Library.{Book, books}
+import fr.rebaze.Endpoints.{booksListingServerEndpoint, helloServerEndpoint}
 import sttp.client3.testing.SttpBackendStub
+import sttp.client3.ziojson.asJson
 import sttp.client3.{UriContext, basicRequest}
 import sttp.tapir.server.stub.TapirStubInterpreter
-import zio.test.Assertion.*
+import sttp.tapir.ztapir.RIOMonadError
+import zio.test.Assertion._
 import zio.test.{ZIOSpecDefault, assertZIO}
 
-import Library.*
-import sttp.client3.ziojson.*
-import sttp.tapir.ztapir.RIOMonadError
-
-object EndpointsSpec extends ZIOSpecDefault:
-
+object EndpointsSpec extends ZIOSpecDefault {
   def spec = suite("Endpoints spec")(
     test("return hello message") {
       // given
@@ -44,3 +42,4 @@ object EndpointsSpec extends ZIOSpecDefault:
       assertZIO(response.map(_.body))(isRight(equalTo(books)))
     }
   )
+}
