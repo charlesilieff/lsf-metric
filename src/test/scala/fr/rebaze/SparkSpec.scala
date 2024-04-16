@@ -1,0 +1,18 @@
+package fr.rebaze
+
+import fr.rebaze.domain.services.spark.Run
+import zio.ZIO
+import zio.test.Assertion.*
+import zio.test.{ZIOSpecDefault, assertZIO}
+
+object SparkSpec extends ZIOSpecDefault:
+  def spec = suite("Session Repo")(
+    test("Read parquet file") {
+      // given
+      Run.eventSequence.show()
+
+      // then
+      assertZIO(ZIO.succeed(1))(equalTo(1))
+    }
+  )
+//{"ruleId": "5548443a-34eb-4fd3-80e2-fd3356da4289", "correct": true, "progress": null, "timestamp": 1672914713065, "exerciseId": "cebba45f-af9a-4c8c-b411-bf5aa08a5fd1"}

@@ -1,5 +1,7 @@
+import scala.collection.Seq
+
 val tapirVersion = "1.10.4"
-val sparkVersion = "3.4.2"
+val sparkVersion = "3.5.1"
 ThisBuild / scalacOptions += "-Wunused:all"
 
 lazy val rootProject = (project in file(".")).settings(
@@ -35,5 +37,7 @@ lazy val rootProject = (project in file(".")).settings(
       "io.github.vincenzobaz"         %% "spark-scala3"               % "0.2.1"
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
-  )
+  ),
+  javaOptions ++= Seq("--add-exports=java.base/sun.nio.ch=ALL-UNNAMED"),
+  fork := true
 )

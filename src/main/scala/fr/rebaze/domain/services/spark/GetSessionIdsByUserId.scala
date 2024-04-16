@@ -1,3 +1,5 @@
+package fr.rebaze.domain.services.spark
+
 import fr.rebaze.domain.services.spark.models.{EventsByUserId, SessionIdsByUserId}
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions.*
