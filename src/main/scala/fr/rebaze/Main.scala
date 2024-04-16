@@ -35,7 +35,7 @@ object Main extends ZIOAppDefault:
     val app: HttpApp[Any]                  = ZioHttpInterpreter(options).toHttp(Endpoints.all)
     val sessionsApp                        = ZioHttpInterpreter(options).toHttp(Endpoints.sessionEndpoint)
     val all: HttpApp[SessionRepository]    = app ++ sessionsApp
-    Run.withOrigin.show()
+    Run.getSessionTimeByUserId("8604980@voltaire")
     (for
         // actualPort <- Server.install(all) // or .serve if you don't need the port and want to keep it running without manual readLine
         _ <- Console.printLine(s"Go to http://localhost:${"actualPort"}/docs to open")
