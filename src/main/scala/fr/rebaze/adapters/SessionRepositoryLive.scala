@@ -54,7 +54,7 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
   }
   override def getAllSessionsByActorGuid(actorGuid: String): Task[Seq[SessionModel]]   =
     run(querySession.filter(_.actorGuid == lift(actorGuid)))
-      .tap(x => ZIO.logInfo(s"Found $x")).map(values =>
+      .tap(x => ZIO.logDebug(s"Found ${x.length}")).map(values =>
         values
           .map(session => new SessionModel(session.guid, actorGuid = session.actorGuid, session.levelGuid, session.interaction.value)))
 
