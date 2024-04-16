@@ -1,8 +1,7 @@
 package fr.rebaze
 
-import fr.rebaze.Endpoints.{*, given}
+import fr.rebaze.Endpoints.*
 import sttp.client3.testing.SttpBackendStub
-import sttp.client3.ziojson.*
 import sttp.client3.{UriContext, basicRequest}
 import sttp.tapir.server.stub.TapirStubInterpreter
 import sttp.tapir.ztapir.RIOMonadError

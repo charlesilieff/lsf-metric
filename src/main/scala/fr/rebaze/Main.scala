@@ -1,9 +1,6 @@
 package fr.rebaze
 
-import fr.rebaze.adapters.SessionRepositoryLive
-import fr.rebaze.db.*
-import fr.rebaze.domain.ports.SessionRepository
-import fr.rebaze.domain.services.spark.Run
+import fr.rebaze.domain.services.MetricsService
 import sttp.tapir.server.interceptor.cors.CORSConfig.AllowedOrigin
 import sttp.tapir.server.interceptor.cors.{CORSConfig, CORSInterceptor}
 import sttp.tapir.server.ziohttp
@@ -34,12 +31,12 @@ object Main extends ZIOAppDefault:
       .options
     val app: HttpApp[Any]                  = ZioHttpInterpreter(options).toHttp(Endpoints.all)
     val sessionsApp                        = ZioHttpInterpreter(options).toHttp(Endpoints.sessionEndpoint)
-    val all: HttpApp[SessionRepository]    = app ++ sessionsApp
-    Run.getSessionTimeByUserId("8604980@voltaire")
+    val all: HttpApp[MetricsService]       = app ++ sessionsApp
+
     (for
-        // actualPort <- Server.install(all) // or .serve if you don't need the port and want to keep it running without manual readLine
-        _ <- Console.printLine(s"Go to http://localhost:${"actualPort"}/docs to open")
-//      _ <- ZIO.never
+      actualPort <- Server.install(all) // or .serve if you don't need the port and want to keep it running without manual readLine
+      _          <- Console.printLine(s"Go to http://localhost:${actualPort}/docs to open")
+      _          <- ZIO.never
     yield ())
       .provide(
         Server.defaultWithPort(port),

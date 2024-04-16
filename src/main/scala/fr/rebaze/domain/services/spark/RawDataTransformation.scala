@@ -52,8 +52,8 @@ object RawDataTransformation:
         (min("timestamp") / 1000).cast("TimeStamp").alias("firstSession"),
         (max("timestamp") / 1000).cast("TimeStamp").alias("lastSession")
       )
-      .withColumn("firstSession", date_format(col("firstSession"), "dd-MM-yyyy"))
-      .withColumn("lastSession", date_format(col("lastSession"), "dd-MM-yyyy"))
+      .withColumn("firstSession", col("firstSession"))
+      .withColumn("lastSession", col("lastSession"))
 //
   def writeToCSV(dataFrame: DataFrame, path: String): Unit                   = {
     val todayFormatted =

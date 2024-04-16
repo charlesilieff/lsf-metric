@@ -61,9 +61,9 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
   override def getUsersByDay(day: LocalDate): Task[Seq[User]] =
     val timestamp                = Timestamp.valueOf(day.atStartOfDay())
     val timestampsInMilliSeconds = timestamp.getTime
-    println(s"Timestamp: $timestampsInMilliSeconds")
+
     run(sessionTimeStampRow(timestampsInMilliSeconds))
-      .tap(x => ZIO.logInfo(s"Found ${x.length} users.")).map(value => value.map(session => new User(session.actorGuid)))
+      .tap(x => ZIO.logInfo(s"Found ${x.length} users")).map(value => value.map(session => new User(session.actorGuid)))
 
   override def getUsersNameAndFirstName(userId: String): Task[UserFirstnameAndLastname] =
     // remove "@lsf" at the end of userId :

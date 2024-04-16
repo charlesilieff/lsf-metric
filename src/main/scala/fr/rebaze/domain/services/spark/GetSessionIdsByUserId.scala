@@ -19,9 +19,9 @@ object GetSessionIdsByUserId:
     def handleDiff(timeOut: Int) =
       udf((timeDiff: Long, timestamp: Long) => if (timeDiff > timeOut) timestamp + ";" else timestamp + "")
 
-    val next       =
+    val next =
       dfTSDiff.withColumn("event_seq", handleDiff(timeOut)(col("time_diff"), col("timestamp")))
-    next.show()
+
     val windowSpec =
       Window.partitionBy("userId").orderBy("timestamp").rowsBetween(Long.MinValue, 0)
 
@@ -38,6 +38,6 @@ object GetSessionIdsByUserId:
         sum("ts_diff_flag").over(windowSpec)
       )
       .withColumn("sessionId", genSessionId(col("userId"), col("sessionInteger")))
-    withSessionId.show()
+
     withSessionId.as[SessionIdsByUserId]
   }

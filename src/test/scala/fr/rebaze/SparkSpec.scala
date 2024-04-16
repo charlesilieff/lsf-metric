@@ -1,6 +1,6 @@
 package fr.rebaze
 
-import fr.rebaze.domain.services.spark.Run
+import fr.rebaze.domain.services.spark.Spark
 import zio.ZIO
 import zio.test.Assertion.*
 import zio.test.{ZIOSpecDefault, assertZIO}
@@ -9,7 +9,7 @@ object SparkSpec extends ZIOSpecDefault:
   def spec = suite("Session Repo")(
     test("Read parquet file") {
       // given
-      Run.eventSequence.show()
+      Spark.eventSequence.show()
 
       // then
       assertZIO(ZIO.succeed(1))(equalTo(1))

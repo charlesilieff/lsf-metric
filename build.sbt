@@ -34,7 +34,9 @@ lazy val rootProject = (project in file(".")).settings(
       // "org.apache.hadoop"              % "hadoop-client"              % "3.4.0"      % Provided,
       "io.github.vincenzobaz"         %% "spark-scala3-encoders"      % "0.2.6",
       "io.github.vincenzobaz"         %% "spark-scala3-udf"           % "0.2.6",
-      "io.github.vincenzobaz"         %% "spark-scala3"               % "0.2.1"
+      "io.github.vincenzobaz"         %% "spark-scala3"               % "0.1.5",
+      "io.univalence"                 %% "zio-spark"                  % "0.12.0",
+      "org.apache.hadoop"              % "hadoop-client"              % "3.4.0"      % Provided
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   ),
