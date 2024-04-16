@@ -71,36 +71,30 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
     run(querySchema[AccountRow](entity = "dbaccount").filter(_.email == lift(email)).take(1))
       .map(value => value.head).map(value => UserFirstnameAndLastname(lastname = Some(value.surname), firstname = Some(value.name)))
 
-  override def getRulesProgressByUserId(userId: String): Task[Iterable[RulesProgressByUserId]] =
-    val query                 = quote {
-      querySchema[SessionRow](entity = "SessionInteractionsWithAutoincrementId", _.actorGuid -> "actorGuid")
-        .filter(_.actorGuid == lift(userId))
-    }
-    val progress              = run(progressAndActorGuidRow(userId)).tap(value => ZIO.logInfo(value.toString()))
+  override def getRulesProgressByUserId(userId: String): Task[RulesProgressByUserId] =
+    val progress              = run(progressAndActorGuidRow(userId))
     val progressByUser        =
       progress
         .map(value =>
           value
-            .groupBy(_.actorGuid).map((userId, interactions) =>
+            .groupBy(_.actorGuid).headOption.map((userId, interactions) =>
               (
                 userId,
                 interactions.map(interaction =>
-                  (interaction.interaction.value.ruleId, interaction.interaction.value.progress.getOrElse(0.0)))))).tap(value =>
-          ZIO.logInfo(value.toString()))
+                  (interaction.interaction.value.ruleId, interaction.interaction.value.progress.getOrElse(0.0)))))).map(value =>
+          value.getOrElse((userId, List.empty)))
     val maxProgressByRuleId   = progressByUser
-      .map(value =>
-        value.map((userId, interactions) =>
-          (
-            userId,
-            interactions.foldLeft[Seq[(String, Double)]](List.empty) {
-              case (acc, (ruleId, progress)) =>
-                acc.find(_._1 == ruleId) match {
-                  case Some((_, maxProgress)) => if (progress > maxProgress) (ruleId, progress) +: acc.filterNot(_._1 == ruleId) else acc
-                  case None                   => (ruleId, progress) +: acc
-                }
-            })))
+      .map((userId, interactions) =>
+        (
+          userId,
+          interactions.foldLeft[Seq[(String, Double)]](List.empty) {
+            case (acc, (ruleId, progress)) =>
+              acc.find(_._1 == ruleId) match {
+                case Some((_, maxProgress)) => if (progress > maxProgress) (ruleId, progress) +: acc.filterNot(_._1 == ruleId) else acc
+                case None                   => (ruleId, progress) +: acc
+              }
+          }))
     val rulesProgressByUserId = maxProgressByRuleId
-      .map(value => value.map((userId, interactions) => RulesProgressByUserId(userId, interactions.toMap))).tap(value =>
-        ZIO.logInfo(value.toString()))
+      .map((userId, interactions) => RulesProgressByUserId(userId, interactions.toMap))
     // .map(_.map(value =>RulesProgressByUserId(value._1,value._2.map(_._2).getOrElse(0.0f)))
     rulesProgressByUserId

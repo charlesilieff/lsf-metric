@@ -50,18 +50,26 @@ final case class MetricsServiceLayer(sessionRepository: SessionRepository) exten
   override def getMetricsByDay(day: LocalDate): Task[Seq[Metric]] =
     for {
       userIds <- sessionRepository.getUsersByDay(day)
+      
       metrics <- ZIO.foreachPar(userIds) { userId =>
                    for {
                      (nameAndFirstName, userTenant) <-
                        if userId.actorGuid.contains("@voltaire") then ZIO.succeed((UserFirstnameAndLastname(None, None), Voltaire))
                        else sessionRepository.getUsersNameAndFirstName(userId.actorGuid).map((_, Lsf))
+                     globalProgress <- getGlobalProgressByUserId(userId.actorGuid) 
                    } yield Metric(
                      userId = userId.actorGuid,
                      lastname = nameAndFirstName.lastname,
                      firstname = nameAndFirstName.firstname,
-                     userTenant)
+                     userTenant,globalProgress)
                  }
     } yield metrics
 
-  override def getGlobalProgressByUserId(userId: String): Task[Float] =
-    extractRulesIdFromJsonDirectExport.map(rules => rules).as(0.23f)
+  override def getGlobalProgressByUserId(userId: String): Task[Double] =
+    for {
+      rulesProgressByUserId <- sessionRepository.getRulesProgressByUserId(userId)
+      rules                 <- extractRulesIdFromJsonDirectExport
+      rulesCount             = rules.size
+      progressExistingRules  = rulesProgressByUserId.progress.filter((ruleId, _) => rules.contains(ruleId))
+      average                = progressExistingRules.values.sum / rulesCount
+    } yield average
