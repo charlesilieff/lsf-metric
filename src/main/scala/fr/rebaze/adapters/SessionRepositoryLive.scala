@@ -2,7 +2,7 @@ package fr.rebaze.adapters
 
 import fr.rebaze.domain.ports.SessionRepository
 import fr.rebaze.domain.ports.models.RulesProgressByUserId
-import fr.rebaze.models.{Interaction, User, UserFirstnameAndLastname, Session as SessionModel}
+import fr.rebaze.models.{Interaction, UserFirstnameAndLastname, UserWithRules, Session as SessionModel}
 import io.getquill.*
 import io.getquill.jdbczio.Quill
 import zio.{Task, ZIO, ZLayer}
@@ -17,8 +17,9 @@ case class SessionRow(
   interaction: JsonValue[Interaction]
 )
 
-case class UserRow(
-  actorGuid: String
+case class UserWithRuleIdRow(
+  actorGuid: String,
+  ruleId: String
 )
 
 case class AccountRow(
@@ -39,16 +40,16 @@ object SessionRepositoryLive:
 final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends SessionRepository:
   import quill.*
 
-  inline private def querySession                                              = quote(
+  inline private def querySession                                                        = quote(
     querySchema[SessionRow](entity = "SessionInteractionsWithAutoincrementId", _.actorGuid -> "actorGuid", _.levelGuid -> "levelGuid"))
-  def sessionTimeStampRow(millisecondsTimestamp: Long): Quoted[Query[UserRow]] = quote {
-    sql"""SELECT DISTINCT actorguid FROM sessioninteractionswithautoincrementid WHERE ((interaction->>'timestamp')::bigint > ${lift(
+  def sessionTimeStampRow(millisecondsTimestamp: Long): Quoted[Query[UserWithRuleIdRow]] = quote {
+    sql"""SELECT actorguid,interaction FROM sessioninteractionswithautoincrementid WHERE ((interaction->>'timestamp')::bigint > ${lift(
         millisecondsTimestamp)} AND (interaction->>'timestamp')::bigint < ${lift(millisecondsTimestamp + MILLI_SECONDS_IN_DAY)})"""
-      .as[Query[UserRow]]
+      .as[Query[UserWithRuleIdRow]]
   }
 
   def progressAndActorGuidRow(actorGuid: String): Quoted[Query[UserAndInteractionRow]] = quote {
-    sql"""SELECT actorguid, interaction FROM sessioninteractionswithautoincrementid WHERE actorguid = ${lift(
+    sql"""SELECT DISTINCT actorguid, interaction FROM sessioninteractionswithautoincrementid WHERE actorguid = ${lift(
         actorGuid)} AND (interaction->>'progress')::float > 0"""
       .as[Query[UserAndInteractionRow]]
   }
@@ -58,12 +59,13 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
         values
           .map(session => new SessionModel(session.guid, actorGuid = session.actorGuid, session.levelGuid, session.interaction.value)))
 
-  override def getUsersByDay(day: LocalDate): Task[Seq[User]] =
+  override def getUsersWithRulesTrainedByDay(day: LocalDate): Task[Iterable[UserWithRules]] =
     val timestamp                = Timestamp.valueOf(day.atStartOfDay())
     val timestampsInMilliSeconds = timestamp.getTime
 
     run(sessionTimeStampRow(timestampsInMilliSeconds))
-      .tap(x => ZIO.logInfo(s"Found ${x.length} users")).map(value => value.map(session => new User(session.actorGuid)))
+      .tap(x => ZIO.logInfo(s"Found ${x.length} users")).map(_.groupBy(_.actorGuid).map(session =>
+        new UserWithRules(session._1, session._2.map(_.ruleId))))
 
   override def getUsersNameAndFirstName(userId: String): Task[UserFirstnameAndLastname] =
     // remove "@lsf" at the end of userId :
@@ -72,8 +74,8 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
       .map(value => value.head).map(value => UserFirstnameAndLastname(lastname = Some(value.surname), firstname = Some(value.name)))
 
   override def getRulesProgressByUserId(userId: String): Task[RulesProgressByUserId] =
-    val progress              = run(progressAndActorGuidRow(userId))
-    val progressByUser        =
+    val progress            = run(progressAndActorGuidRow(userId))
+    val progressByUser      =
       progress
         .map(value =>
           value
@@ -83,7 +85,7 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
                 interactions.map(interaction =>
                   (interaction.interaction.value.ruleId, interaction.interaction.value.progress.getOrElse(0.0)))))).map(value =>
           value.getOrElse((userId, List.empty)))
-    val maxProgressByRuleId   = progressByUser
+    val maxProgressByRuleId = progressByUser
       .map((userId, interactions) =>
         (
           userId,
@@ -94,7 +96,7 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
                 case None                   => (ruleId, progress) +: acc
               }
           }))
-    val rulesProgressByUserId = maxProgressByRuleId
+    maxProgressByRuleId
       .map((userId, interactions) => RulesProgressByUserId(userId, interactions.toMap))
-    // .map(_.map(value =>RulesProgressByUserId(value._1,value._2.map(_._2).getOrElse(0.0f)))
-    rulesProgressByUserId
+
+  override def getLevelIdsByUserIdByDay(userId: String, day: LocalDate): Task[Seq[String]] = ???

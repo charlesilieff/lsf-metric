@@ -47,9 +47,9 @@ final case class MetricsServiceLayer(sessionRepository: SessionRepository) exten
                    files.map(_.levels)).map(files => files.map(_.flatMap(_.rules)).flatMap(_.map(_.guid)))
     } yield rules
 
-  override def getMetricsByDay(day: LocalDate): Task[Seq[UserProgress]] =
+  override def getUsersGlobalProgressByDay(day: LocalDate): Task[Seq[UserProgress]] =
     for {
-      userIds <- sessionRepository.getUsersByDay(day)
+      userIds <- sessionRepository.getUsersWithRulesTrainedByDay(day)
 
       metrics <- ZIO.foreachPar(userIds) { userId =>
                    for {
@@ -64,7 +64,7 @@ final case class MetricsServiceLayer(sessionRepository: SessionRepository) exten
                      userTenant,
                      globalProgress)
                  }
-    } yield metrics
+    } yield metrics.toSeq
 
   override def getGlobalProgressByUserId(userId: String): Task[Double] =
     for {
@@ -74,3 +74,8 @@ final case class MetricsServiceLayer(sessionRepository: SessionRepository) exten
       progressExistingRules  = rulesProgressByUserId.progress.filter((ruleId, _) => rules.contains(ruleId))
       average                = progressExistingRules.values.sum / rulesCount
     } yield average
+
+  // TODO: delete this method
+  override def getLevelIdsByUserIdByDay(userId: String, day: LocalDate): Task[Seq[String]] =
+    sessionRepository.getLevelIdsByUserIdByDay(userId, day)
+    ZIO.succeed(List.empty)

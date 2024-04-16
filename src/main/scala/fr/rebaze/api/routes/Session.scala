@@ -27,13 +27,13 @@ object Session:
   val sessionLive: ZServerEndpoint[MetricsService, Any] = findOneGuid
     .serverLogicSuccess { localDate =>
       for {
-        allUserProgress <- MetricsService.getMetricsByDay(localDate)
+        allUserProgress <- MetricsService.getUsersGlobalProgressByDay(localDate)
         _               <- ZIO.logInfo(s"Processing ${allUserProgress.size} user sessions")
         results         <- ZIO
                              .foreachPar(allUserProgress)(session =>
                                for {
-                                 _ <- ZIO.logInfo(s"Processing session for actor ${session.actorGuid}")
-
+                                 _              <- ZIO.logInfo(s"Processing session for actor ${session.actorGuid}")
+                                 levelIds       <- MetricsService.getLevelIdsByUserIdByDay(session.actorGuid, localDate)
                                  sessionDuration = Spark.getSessionTimeByUserId(session.actorGuid)
                                } yield SessionMetric(
                                  userId = session.actorGuid,
@@ -42,7 +42,8 @@ object Session:
                                  lastName = session.lastname,
                                  trainingDuration = (sessionDuration.averageSessionTime * sessionDuration.sessionCount).toMillis,
                                  completionPercentage = session.globalProgress,
-                                 lastUseDate = sessionDuration.lastSession
+                                 lastUseDate = sessionDuration.lastSession,
+                                 levelProgress = List.empty
                                )).withParallelism(4)
         _               <- ZIO.logInfo(s"Processed ${results.size} sessions !!")
 

@@ -9,8 +9,14 @@ case class SessionMetric(
   lastName: Option[String],
   trainingDuration: Long,
   completionPercentage: Double,
-  lastUseDate: Long)
+  lastUseDate: Long,
+  levelProgress: List[LevelProgress])
 
 object SessionMetric:
   given sessionZioEncoder: zio.json.JsonEncoder[SessionMetric] = DeriveJsonEncoder.gen[SessionMetric]
   given sessionZioDecoder: zio.json.JsonDecoder[SessionMetric] = DeriveJsonDecoder.gen[SessionMetric]
+case class LevelProgress(levelId: String, completionPercentage: Int)
+
+object LevelProgress:
+  given sessionZioEncoder: zio.json.JsonEncoder[LevelProgress] = DeriveJsonEncoder.gen[LevelProgress]
+  given sessionZioDecoder: zio.json.JsonDecoder[LevelProgress] = DeriveJsonDecoder.gen[LevelProgress]

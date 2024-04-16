@@ -24,16 +24,16 @@ object SessionRepositorySpec extends ZIOSpecDefault:
       // then
       assertZIO(sessions)(isNonEmpty)
     },
-    test("return all users in a day") {
+    test("return all users and rules studied in a day") {
       // given
-      val users = SessionRepository.getUsersByDay(LocalDate.of(1999, 1, 1))
+      val users = SessionRepository.getUsersWithRulesTrainedByDay(LocalDate.of(1999, 1, 1))
 
       // then
       assertZIO(users)(isEmpty)
     },
     test("return all users in a day 16/01/2024, it should be more than 100") {
       // given
-      val users = SessionRepository.getUsersByDay(LocalDate.of(2024, 1, 16))
+      val users = SessionRepository.getUsersWithRulesTrainedByDay(LocalDate.of(2024, 1, 16))
 
       // then
       assertZIO(users)(isNonEmpty)

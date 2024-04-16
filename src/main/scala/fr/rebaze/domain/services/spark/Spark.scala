@@ -2,10 +2,9 @@ package fr.rebaze.domain.services.spark
 
 import fr.rebaze.domain.services.spark.GetSessionIdsByUserId.runTransformation
 import fr.rebaze.domain.services.spark.RawDataTransformation.*
-import fr.rebaze.domain.services.spark.models.{EventsByUserId, UserSessionsTime}
-import org.apache.spark.sql.functions.*
+import fr.rebaze.domain.services.spark.models.UserSessionsTime
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{Dataset, SparkSession}
 import scala3encoders.given
 
 import java.time.LocalTime
@@ -66,26 +65,6 @@ object Spark:
 //  // 5 minutes in milliseconds
   val TIME_OUT = 300000
 
-  val sessions: Dataset[EventsByUserId] = getEventsByUserId(eventSequence)
-
-  val sesssionIds2 = runTransformation(TIME_OUT)(sessions)
-
-  val countSessionDF = countSession(sesssionIds2)
-
-  val averageSessionTimeDF = averageSessionTime(sesssionIds2)
-
-  val firstAndLastSessionDF = firstAndLastSession(sesssionIds2)
-
-  val all                                                         =
-    countSessionDF.join(averageSessionTimeDF, "userId").join(firstAndLastSessionDF, "userId")
-  val withOrigin                                                  = all
-    .withColumn(
-      "origin",
-      when(col("userId").contains("lsf"), "lsf")
-        .when(col("userId").contains("voltaire"), "voltaire")
-        .otherwise("unknown")
-    )
-    .withColumn("userId", regexp_replace(col("userId"), "@(lsf|voltaire)", ""))
   def getSessionTimeByUserId(actorGuid: String): UserSessionsTime =
     val dataFrame             = eventSequenceByUserId(actorGuid)
     val events                = getEventsByUserId(dataFrame)
