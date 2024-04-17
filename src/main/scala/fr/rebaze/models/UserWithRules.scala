@@ -2,7 +2,6 @@ package fr.rebaze.models
 
 import fr.rebaze.adapters.LevelProgress
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder}
-import zio.prelude.Newtype
 
 case class UserWithRules(actorGuid: String, levelProgress: Iterable[LevelProgress])
 

@@ -1,6 +1,5 @@
 package fr.rebaze.api.routes
 
-import fr.rebaze.adapters.LevelProgress
 import fr.rebaze.domain.services.MetricsService
 import fr.rebaze.domain.services.spark.Spark
 import sttp.model.StatusCode
@@ -44,7 +43,7 @@ object Session:
                                  trainingDuration = (sessionDuration.averageSessionTime * sessionDuration.sessionCount).toMillis,
                                  completionPercentage = session.completionPercentage,
                                  lastUseDate = sessionDuration.lastSession,
-                                 levelProgress = session
+                                 levelsProgress = session
                                    .levelProgress.map[(String, LevelProgressAndDuration)](pp =>
                                      pp.levelId.toString -> LevelProgressAndDuration(pp.completionPercentage)).toMap
                                )).withParallelism(4)

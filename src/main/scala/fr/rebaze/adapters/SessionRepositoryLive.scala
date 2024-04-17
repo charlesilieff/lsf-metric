@@ -79,21 +79,22 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
     val timestampsInMilliSeconds = timestamp.getTime
 
     run(sessionTimeStampRow(timestampsInMilliSeconds))
-      .tap(x => ZIO.logInfo(s"Found ${x.length} users")).map(_.groupBy(_.actorGuid).map(userAndLevelAndInteraction =>
+      .tap(x => ZIO.logInfo(s"Found ${x.length} users for timestamp ${timestampsInMilliSeconds}")).map(
+        _.groupBy(_.actorGuid).map(userAndLevelAndInteraction =>
 
-        val levelsProgress = userAndLevelAndInteraction
-          ._2.foldLeft[Seq[(LevelId, Double)]](List.empty) {
-            case (acc, userAndInteraction) =>
-              acc.find(_._1 == LevelId(userAndInteraction.levelGuid)) match {
-                case Some((levelId, maxProgress)) =>
-                  if (userAndInteraction.interaction.value.progress.getOrElse(0d) > maxProgress)
-                    (levelId, userAndInteraction.interaction.value.progress.getOrElse(0d)) +: acc.filterNot(_._1 == levelId)
-                  else acc
-                case None                         => (LevelId(userAndInteraction.levelGuid), userAndInteraction.interaction.value.progress.getOrElse(0)) +: acc
-              }
-          }
-        new UserWithRules(userAndLevelAndInteraction._1, levelsProgress.map((ruleId, progress) => LevelProgress(ruleId, progress)))
-      ))
+          val levelsProgress = userAndLevelAndInteraction
+            ._2.foldLeft[Seq[(LevelId, Double)]](List.empty) {
+              case (acc, userAndInteraction) =>
+                acc.find(_._1 == LevelId(userAndInteraction.levelGuid)) match {
+                  case Some((levelId, maxProgress)) =>
+                    if (userAndInteraction.interaction.value.progress.getOrElse(0d) > maxProgress)
+                      (levelId, userAndInteraction.interaction.value.progress.getOrElse(0d)) +: acc.filterNot(_._1 == levelId)
+                    else acc
+                  case None                         => (LevelId(userAndInteraction.levelGuid), userAndInteraction.interaction.value.progress.getOrElse(0)) +: acc
+                }
+            }
+          new UserWithRules(userAndLevelAndInteraction._1, levelsProgress.map((ruleId, progress) => LevelProgress(ruleId, progress)))
+        ))
 
   override def getUsersNameAndFirstName(userId: String): Task[UserFirstnameAndLastname] =
     // remove "@lsf" at the end of userId :

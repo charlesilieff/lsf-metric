@@ -7,7 +7,7 @@ import zio.test.{ZIOSpecDefault, assertZIO}
 
 object SparkSpec extends ZIOSpecDefault:
   def spec = suite("Session Repo")(
-    test("Read parquet file") {
+    test("Spark") {
       // given
       Spark.eventSequence.show()
 

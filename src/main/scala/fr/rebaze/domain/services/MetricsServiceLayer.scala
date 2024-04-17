@@ -49,9 +49,9 @@ final case class MetricsServiceLayer(sessionRepository: SessionRepository) exten
 
   override def getUsersProgressByDay(day: LocalDate): Task[Iterable[UserProgress]] =
     for {
-      userIds <- sessionRepository.getUsersWithRulesTrainedByDay(day)
+      userIdsWithRules <- sessionRepository.getUsersWithRulesTrainedByDay(day)
 
-      metrics <- ZIO.foreachPar(userIds) { userIdAndRulesIds =>
+      metrics <- ZIO.foreachPar(userIdsWithRules) { userIdAndRulesIds =>
                    for {
                      (nameAndFirstName, userTenant) <-
                        if userIdAndRulesIds.actorGuid.contains("@voltaire") then
@@ -64,7 +64,6 @@ final case class MetricsServiceLayer(sessionRepository: SessionRepository) exten
                      firstname = nameAndFirstName.firstname,
                      userTenant,
                      globalProgress,
-                     // This not good !!
                      levelProgress = userIdAndRulesIds.levelProgress
                    )
                  }

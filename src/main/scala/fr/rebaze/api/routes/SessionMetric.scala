@@ -1,8 +1,6 @@
 package fr.rebaze.api.routes
 
-import fr.rebaze.adapters.LevelId
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder}
-import zio.prelude.Newtype
 
 case class SessionMetric(
   userId: String,
@@ -12,7 +10,7 @@ case class SessionMetric(
   trainingDuration: Long,
   completionPercentage: Double,
   lastUseDate: Long,
-  levelProgress: Map[String, LevelProgressAndDuration])
+  levelsProgress: Map[String, LevelProgressAndDuration])
 
 case class LevelProgressAndDuration(completionPercentage: Double)
 
