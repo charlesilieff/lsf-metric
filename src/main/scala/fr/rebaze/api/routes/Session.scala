@@ -2,6 +2,7 @@ package fr.rebaze.api.routes
 
 import fr.rebaze.domain.ports.spark.Spark
 import fr.rebaze.domain.services.MetricsService
+import fr.rebaze.domain.services.metrics.models.{LevelProgressAndDuration, SessionMetric}
 import sttp.model.StatusCode
 import sttp.tapir.Endpoint
 import sttp.tapir.generic.auto.*

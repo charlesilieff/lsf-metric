@@ -1,6 +1,6 @@
 package fr.rebaze.domain.services
 
-import fr.rebaze.domain.services.models.UserProgress
+import fr.rebaze.domain.services.metrics.models.UserProgress
 import zio.*
 
 import java.time.LocalDate

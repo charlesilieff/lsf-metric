@@ -1,4 +1,4 @@
-package fr.rebaze.domain.services.models
+package fr.rebaze.domain.services.metrics.models
 
 import fr.rebaze.adapters.LevelProgress
 

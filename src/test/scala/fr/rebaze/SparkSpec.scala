@@ -9,7 +9,6 @@ object SparkSpec extends ZIOSpecDefault:
   def spec = suite("Session Repo")(
     test("Spark") {
       // given
-      Spark.eventSequence.show()
 
       // then
       assertZIO(ZIO.succeed(1))(equalTo(1))

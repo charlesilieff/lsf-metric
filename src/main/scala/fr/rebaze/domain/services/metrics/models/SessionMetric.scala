@@ -1,4 +1,4 @@
-package fr.rebaze.api.routes
+package fr.rebaze.domain.services.metrics.models
 
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder}
 
