@@ -3,8 +3,6 @@ package fr.rebaze.domain.services
 import fr.rebaze.common.Exceptions.NotFound
 import fr.rebaze.domain.ports.SessionRepository
 import fr.rebaze.domain.services.models.UserProgress
-import fr.rebaze.domain.services.models.UserTenant.*
-import fr.rebaze.models.UserFirstnameAndLastname
 import zio.json.{DecoderOps, DeriveJsonCodec, DeriveJsonDecoder, JsonCodec, JsonDecoder}
 import zio.nio.*
 import zio.nio.file.{Files, Path}
@@ -49,20 +47,17 @@ final case class MetricsServiceLayer(sessionRepository: SessionRepository) exten
 
   override def getUsersProgressByDay(day: LocalDate): Task[Iterable[UserProgress]] =
     for {
-      userIdsWithRules <- sessionRepository.getUsersWithRulesTrainedByDay(day)
+      userIdsWithRules <- sessionRepository.getLsfUsersWithRulesTrainedByDay(day)
 
       metrics <- ZIO.foreachPar(userIdsWithRules) { userIdAndRulesIds =>
                    for {
-                     (nameAndFirstName, userTenant) <-
-                       if userIdAndRulesIds.actorGuid.contains("@voltaire") then
-                         ZIO.succeed((UserFirstnameAndLastname(None, None), Voltaire))
-                       else sessionRepository.getUsersNameAndFirstName(userIdAndRulesIds.actorGuid).map((_, Lsf))
-                     globalProgress                 <- getGlobalProgressByUserId(userIdAndRulesIds.actorGuid)
+                     nameAndFirstName <-
+                       sessionRepository.getUsersNameAndFirstName(userIdAndRulesIds.actorGuid)
+                     globalProgress   <- getGlobalProgressByUserId(userIdAndRulesIds.actorGuid)
                    } yield UserProgress(
                      actorGuid = userIdAndRulesIds.actorGuid,
                      lastname = nameAndFirstName.lastname,
                      firstname = nameAndFirstName.firstname,
-                     userTenant,
                      globalProgress,
                      levelProgress = userIdAndRulesIds.levelProgress
                    )

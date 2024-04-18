@@ -4,7 +4,6 @@ import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder}
 
 case class SessionMetric(
   userId: String,
-  userTenant: String,
   firstName: Option[String],
   lastName: Option[String],
   trainingDuration: Long,

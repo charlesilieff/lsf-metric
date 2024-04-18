@@ -28,7 +28,7 @@ object Session:
     .serverLogicSuccess { localDate =>
       for {
         allUserProgress <- MetricsService.getUsersProgressByDay(localDate)
-        _               <- ZIO.logInfo(s"Processing ${allUserProgress.size} user sessions")
+        _               <- ZIO.logInfo(s"Processing ${allUserProgress.size} lsf user sessions")
         results         <- ZIO
                              .foreachPar(allUserProgress)(session =>
                                for {
@@ -37,7 +37,6 @@ object Session:
                                  sessionDuration = Spark.getSessionTimeByUserId(session.actorGuid)
                                } yield SessionMetric(
                                  userId = session.actorGuid,
-                                 userTenant = session.userTenant.toString,
                                  firstName = session.firstname,
                                  lastName = session.lastname,
                                  trainingDuration = (sessionDuration.averageSessionTime * sessionDuration.sessionCount).toMillis,

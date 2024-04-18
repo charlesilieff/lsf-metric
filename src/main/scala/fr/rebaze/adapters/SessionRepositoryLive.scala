@@ -59,7 +59,8 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
     querySchema[SessionRow](entity = "SessionInteractionsWithAutoincrementId", _.actorGuid -> "actorGuid", _.levelGuid -> "levelGuid"))
   def sessionTimeStampRow(millisecondsTimestamp: Long): Quoted[Query[ActorAndInteractionAndLevelGuidRow]] = quote {
     sql"""SELECT actorguid, levelguid, interaction FROM sessioninteractionswithautoincrementid WHERE ((interaction->>'timestamp')::bigint > ${lift(
-        millisecondsTimestamp)} AND (interaction->>'timestamp')::bigint < ${lift(millisecondsTimestamp + MILLI_SECONDS_IN_DAY)})"""
+        millisecondsTimestamp)} AND (interaction->>'timestamp')::bigint < ${lift(
+        millisecondsTimestamp + MILLI_SECONDS_IN_DAY)} AND actorguid LIKE '%@lsf')"""
       .as[Query[ActorAndInteractionAndLevelGuidRow]]
   }
 
@@ -74,7 +75,7 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
         values
           .map(session => new SessionModel(session.guid, actorGuid = session.actorGuid, session.levelGuid, session.interaction.value)))
 
-  override def getUsersWithRulesTrainedByDay(day: LocalDate): Task[Iterable[UserWithRules]] =
+  override def getLsfUsersWithRulesTrainedByDay(day: LocalDate): Task[Iterable[UserWithRules]] =
     val timestamp                = Timestamp.valueOf(day.atStartOfDay())
     val timestampsInMilliSeconds = timestamp.getTime
 

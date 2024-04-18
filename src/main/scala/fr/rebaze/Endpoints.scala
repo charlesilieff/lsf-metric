@@ -9,13 +9,12 @@ import zio.{Task, ZIO}
 
 object Endpoints:
   case class User(name: String) extends AnyVal
-  val helloEndpoint: PublicEndpoint[User, Unit, String, Any] = endpoint
+  val helloEndpoint: PublicEndpoint[Unit, Unit, String, Any] = endpoint
     .get
-    .in("hello")
-    .in(query[User]("name"))
+    .in("health")
     .out(stringBody)
   val helloServerEndpoint: ZServerEndpoint[Any, Any]         =
-    helloEndpoint.serverLogicSuccess(user => ZIO.logInfo("Hello there").as(s"Hello ${user.name}"))
+    helloEndpoint.serverLogicSuccess(user => ZIO.logInfo("Hello there !").as(s"Hello there !"))
 
   val apiEndpoints: List[ZServerEndpoint[Any, Any]] = List(helloServerEndpoint)
 
