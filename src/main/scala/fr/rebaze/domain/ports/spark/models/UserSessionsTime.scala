@@ -1,4 +1,4 @@
-package fr.rebaze.domain.services.spark.models
+package fr.rebaze.domain.ports.spark.models
 
 import scala.concurrent.duration.Duration
 

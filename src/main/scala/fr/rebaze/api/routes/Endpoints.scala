@@ -1,4 +1,4 @@
-package fr.rebaze
+package fr.rebaze.api.routes
 
 import fr.rebaze.api.routes.Session.sessionLive
 import fr.rebaze.domain.services.MetricsService

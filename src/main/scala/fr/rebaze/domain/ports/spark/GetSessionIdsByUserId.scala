@@ -1,6 +1,6 @@
-package fr.rebaze.domain.services.spark
+package fr.rebaze.domain.ports.spark
 
-import fr.rebaze.domain.services.spark.models.{EventsByUserId, SessionIdsByUserId}
+import fr.rebaze.domain.ports.spark.models.{EventsByUserId, SessionIdsByUserId}
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions.*
 import org.apache.spark.sql.{Column, Dataset}

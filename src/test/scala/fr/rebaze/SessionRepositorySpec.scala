@@ -1,5 +1,6 @@
 package fr.rebaze
 
+import fr.rebaze.common.Layer
 import fr.rebaze.domain.ports.SessionRepository
 import fr.rebaze.domain.ports.models.RulesProgressByUserId
 import fr.rebaze.models.UserFirstnameAndLastname

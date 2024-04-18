@@ -1,6 +1,6 @@
 package fr.rebaze
 
-import fr.rebaze.Endpoints.*
+import fr.rebaze.api.routes.Endpoints.*
 import sttp.client3.testing.SttpBackendStub
 import sttp.client3.{UriContext, basicRequest}
 import sttp.tapir.server.stub.TapirStubInterpreter

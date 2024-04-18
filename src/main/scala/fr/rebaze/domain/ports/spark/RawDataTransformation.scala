@@ -1,6 +1,6 @@
-package fr.rebaze.domain.services.spark
+package fr.rebaze.domain.ports.spark
 
-import fr.rebaze.domain.services.spark.models.{EventsByUserId, Interaction, RawEvents, SessionIdsByUserId}
+import fr.rebaze.domain.ports.spark.models.{EventsByUserId, Interaction, RawEvents, SessionIdsByUserId}
 import org.apache.spark.sql.execution.datasources.csv.CSVFileFormat
 import org.apache.spark.sql.functions.*
 import org.apache.spark.sql.types.{BooleanType, LongType, StringType, StructType}

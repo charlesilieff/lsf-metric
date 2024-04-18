@@ -1,6 +1,5 @@
-package fr.rebaze.adapters
+package fr.rebaze.domain.ports.engine
 
-import fr.rebaze.domain.services.engine.Engine
 import zio.{Task, ULayer, ZIO, ZLayer}
 
 import java.time.LocalDateTime

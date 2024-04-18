@@ -1,8 +1,8 @@
-package fr.rebaze.domain.services.spark
+package fr.rebaze.domain.ports.spark
 
-import fr.rebaze.domain.services.spark.GetSessionIdsByUserId.runTransformation
-import fr.rebaze.domain.services.spark.RawDataTransformation.*
-import fr.rebaze.domain.services.spark.models.UserSessionsTime
+import fr.rebaze.domain.ports.spark.GetSessionIdsByUserId.runTransformation
+import fr.rebaze.domain.ports.spark.RawDataTransformation.*
+import fr.rebaze.domain.ports.spark.models.UserSessionsTime
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.StructType
 import scala3encoders.given

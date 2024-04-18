@@ -1,4 +1,4 @@
-package fr.rebaze.domain.services.spark.models
+package fr.rebaze.domain.ports.spark.models
 
 //
 case class SessionIdsByUserId(userId: String, sessionId: String, timeStamp: Long)

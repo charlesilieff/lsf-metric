@@ -1,5 +1,6 @@
 package fr.rebaze
 
+import fr.rebaze.common.Layer
 import fr.rebaze.domain.services.MetricsService
 import zio.*
 import zio.test.Assertion.*

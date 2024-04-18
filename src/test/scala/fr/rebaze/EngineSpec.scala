@@ -1,7 +1,6 @@
 package fr.rebaze
 
-import fr.rebaze.adapters.EngineLive
-import fr.rebaze.domain.services.engine.Engine
+import fr.rebaze.domain.ports.engine.{Engine, EngineLive}
 import zio.test.Assertion.*
 import zio.test.{ZIOSpecDefault, assertZIO}
 

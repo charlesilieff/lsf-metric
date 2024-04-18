@@ -1,6 +1,6 @@
 package fr.rebaze.domain.services
 
-import fr.rebaze.common.Exceptions.NotFound
+import fr.rebaze.domain.services.metrics.errors.Exceptions.NotFound
 import fr.rebaze.domain.ports.SessionRepository
 import fr.rebaze.domain.services.models.UserProgress
 import zio.json.{DecoderOps, DeriveJsonCodec, DeriveJsonDecoder, JsonCodec, JsonDecoder}
@@ -26,10 +26,10 @@ object Application {
     DeriveJsonCodec.gen[Application]
 }
 
-object MetricsServiceLayer:
-  val layer: ZLayer[SessionRepository, Nothing, MetricsServiceLayer] =
-    ZLayer.fromFunction(MetricsServiceLayer(_))
-final case class MetricsServiceLayer(sessionRepository: SessionRepository) extends MetricsService:
+object MetricsServiceLive:
+  val layer: ZLayer[SessionRepository, Nothing, MetricsServiceLive] =
+    ZLayer.fromFunction(MetricsServiceLive(_))
+final case class MetricsServiceLive(sessionRepository: SessionRepository) extends MetricsService:
   override val extractRulesIdFromJsonDirectExport: Task[Iterable[String]] =
     val currentPath = System.getProperty("user.dir")
     val fileNames   = List("json_direct_export_4.json", "json_direct_export_5.json", "json_direct_export_6.json")
