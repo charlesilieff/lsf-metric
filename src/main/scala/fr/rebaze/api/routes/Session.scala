@@ -38,8 +38,6 @@ object Session:
                                  sessionDuration = Spark.getSessionTimeByUserId(session.actorGuid)
                                } yield SessionMetric(
                                  userId = session.actorGuid,
-                                 firstName = session.firstname,
-                                 lastName = session.lastname,
                                  trainingDuration = (sessionDuration.averageSessionTime * sessionDuration.sessionCount).toMillis,
                                  completionPercentage = session.completionPercentage,
                                  lastUseDate = sessionDuration.lastSession,

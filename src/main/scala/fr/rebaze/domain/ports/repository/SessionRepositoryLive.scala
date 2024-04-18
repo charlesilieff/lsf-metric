@@ -1,8 +1,8 @@
-package fr.rebaze.adapters
+package fr.rebaze.domain.ports.repository
 
-import fr.rebaze.domain.ports.SessionRepository
 import fr.rebaze.domain.ports.models.RulesProgressByUserId
-import fr.rebaze.models.{Interaction, UserFirstnameAndLastname, UserWithRules, Session as SessionModel}
+import fr.rebaze.domain.ports.repository.models.{Interaction, RuleId, UserLevelsProgressAndRulesAnswers, Session as SessionModel}
+import fr.rebaze.models.UserFirstnameAndLastname
 import io.getquill.*
 import io.getquill.jdbczio.Quill
 import sttp.tapir.codec.zio.prelude.newtype.TapirNewtypeSupport
@@ -27,7 +27,7 @@ case class AccountRow(
 )
 
 object LevelId extends Newtype[String] with TapirNewtypeSupport[String]:
-  implicit val codec: JsonCodec[Type] = derive
+  given JsonCodec[Type] = derive
 type LevelId = LevelId.Type
 
 case class ActorAndInteractionAndLevelGuidRow(
@@ -41,12 +41,12 @@ case class ActorAndInteractionRow(
   interaction: JsonValue[Interaction]
 )
 
-case class LevelProgress(levelId: LevelId, completionPercentage: Double)
+case class LevelProgressRepo(levelId: LevelId, completionPercentage: Double, rulesProgress: Map[RuleId, Map[Long, Boolean]] = Map.empty)
 
-object LevelProgress:
-  given sessionZioEncoder: zio.json.JsonEncoder[LevelProgress] = DeriveJsonEncoder.gen[LevelProgress]
+object LevelProgressRepo:
+  given sessionZioEncoder: zio.json.JsonEncoder[LevelProgressRepo] = DeriveJsonEncoder.gen[LevelProgressRepo]
 
-  given sessionZioDecoder: zio.json.JsonDecoder[LevelProgress] = DeriveJsonDecoder.gen[LevelProgress]
+  given sessionZioDecoder: zio.json.JsonDecoder[LevelProgressRepo] = DeriveJsonDecoder.gen[LevelProgressRepo]
 val MILLI_SECONDS_IN_DAY = 86400000
 
 object SessionRepositoryLive:
@@ -75,7 +75,7 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
         values
           .map(session => new SessionModel(session.guid, actorGuid = session.actorGuid, session.levelGuid, session.interaction.value)))
 
-  override def getLsfUsersWithRulesTrainedByDay(day: LocalDate): Task[Iterable[UserWithRules]] =
+  override def getUsersLevelsProgressAndRulesAnswers(day: LocalDate): Task[Iterable[UserLevelsProgressAndRulesAnswers]] =
     val timestamp                = Timestamp.valueOf(day.atStartOfDay())
     val timestampsInMilliSeconds = timestamp.getTime
 
@@ -94,7 +94,9 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
                   case None                         => (LevelId(userAndInteraction.levelGuid), userAndInteraction.interaction.value.progress.getOrElse(0)) +: acc
                 }
             }
-          new UserWithRules(userAndLevelAndInteraction._1, levelsProgress.map((ruleId, progress) => LevelProgress(ruleId, progress)))
+          new UserLevelsProgressAndRulesAnswers(
+            userAndLevelAndInteraction._1,
+            levelsProgress.map((ruleId, progress) => LevelProgressRepo(ruleId, progress)))
         ))
 
   override def getUsersNameAndFirstName(userId: String): Task[UserFirstnameAndLastname] =

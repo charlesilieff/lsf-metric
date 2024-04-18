@@ -1,4 +1,4 @@
-package fr.rebaze.db
+package fr.rebaze.domain.ports.repository
 
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import io.getquill.*

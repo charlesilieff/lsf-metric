@@ -1,8 +1,8 @@
 package fr.rebaze
 
 import fr.rebaze.common.Layer
-import fr.rebaze.domain.ports.SessionRepository
 import fr.rebaze.domain.ports.models.RulesProgressByUserId
+import fr.rebaze.domain.ports.repository.SessionRepository
 import fr.rebaze.models.UserFirstnameAndLastname
 import zio.test.Assertion.*
 import zio.test.{ZIOSpecDefault, assertZIO}
@@ -27,14 +27,14 @@ object SessionRepositorySpec extends ZIOSpecDefault:
     },
     test("return all users and rules studied in a day") {
       // given
-      val users = SessionRepository.getLsfUsersWithRulesTrainedByDay(LocalDate.of(1999, 1, 1))
+      val users = SessionRepository.getUsersLevelsProgressAndRulesAnswers(LocalDate.of(1999, 1, 1))
 
       // then
       assertZIO(users)(isEmpty)
     },
     test("return all users in a day 16/01/2024, it should be more than 100") {
       // given
-      val users = SessionRepository.getLsfUsersWithRulesTrainedByDay(LocalDate.of(2024, 1, 16))
+      val users = SessionRepository.getUsersLevelsProgressAndRulesAnswers(LocalDate.of(2024, 1, 16))
 
       // then
       assertZIO(users)(isNonEmpty)

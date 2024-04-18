@@ -1,22 +1,23 @@
-package fr.rebaze.domain.ports
+package fr.rebaze.domain.ports.repository
 
 import fr.rebaze.domain.ports.models.RulesProgressByUserId
-import fr.rebaze.models.{Session, UserFirstnameAndLastname, UserWithRules}
+import fr.rebaze.domain.ports.repository.models.*
+import fr.rebaze.models.UserFirstnameAndLastname
 import zio.*
 
 import java.time.LocalDate
 
 trait SessionRepository:
   def getAllSessionsByActorGuid(guid: String): Task[Iterable[Session]]
-  def getLsfUsersWithRulesTrainedByDay(day: LocalDate): Task[Iterable[UserWithRules]]
+  def getUsersLevelsProgressAndRulesAnswers(day: LocalDate): Task[Iterable[UserLevelsProgressAndRulesAnswers]]
   def getUsersNameAndFirstName(userId: String): Task[UserFirstnameAndLastname]
   def getRulesProgressByUserId(userId: String): Task[RulesProgressByUserId]
   def getLevelIdsByUserIdByDay(userId: String, day: LocalDate): Task[Iterable[String]]
 object SessionRepository:
-  def getAllSessionsByActorGuid(guid: String): RIO[SessionRepository, Iterable[Session]]             =
+  def getAllSessionsByActorGuid(guid: String): RIO[SessionRepository, Iterable[Session]]                                         =
     ZIO.serviceWithZIO[SessionRepository](_.getAllSessionsByActorGuid(guid))
-  def getLsfUsersWithRulesTrainedByDay(day: LocalDate): RIO[SessionRepository, Iterable[UserWithRules]] =
-    ZIO.serviceWithZIO[SessionRepository](_.getLsfUsersWithRulesTrainedByDay(day))
+  def getUsersLevelsProgressAndRulesAnswers(day: LocalDate): RIO[SessionRepository, Iterable[UserLevelsProgressAndRulesAnswers]] =
+    ZIO.serviceWithZIO[SessionRepository](_.getUsersLevelsProgressAndRulesAnswers(day))
 
   def getUsersNameAndFirstName(userId: String): RIO[SessionRepository, UserFirstnameAndLastname] =
     ZIO.serviceWithZIO[SessionRepository](_.getUsersNameAndFirstName(userId))

@@ -1,8 +1,7 @@
-package fr.rebaze.db
+package fr.rebaze.common
 
-import zio.ZLayer
-import zio._
-import zio.config.magnolia._
+import zio.*
+import zio.config.magnolia.*
 
 final case class RootConfig(
   config: AppConfig
@@ -22,7 +21,7 @@ final case class DatabaseConfig(
   port: Int,
   database: String,
   schema: String,
-  serverName:String
+  serverName: String
 )
 
 object Configuration:

@@ -1,9 +1,10 @@
 package fr.rebaze.common
 
-import fr.rebaze.adapters.SessionRepositoryLive
-import fr.rebaze.db.{Configuration, Db, DbConfig}
-import fr.rebaze.domain.ports.SessionRepository
-import fr.rebaze.domain.services.{MetricsService, MetricsServiceLive}
+
+
+import fr.rebaze.domain.ports.repository.*
+import fr.rebaze.domain.services.MetricsService
+import fr.rebaze.domain.services.metrics.MetricsServiceLive
 import zio.{Config, ZLayer}
 
 object Layer:

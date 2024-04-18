@@ -1,8 +1,10 @@
-package fr.rebaze.domain.services
+package fr.rebaze.domain.services.metrics
 
-import fr.rebaze.domain.ports.SessionRepository
+
+import fr.rebaze.domain.ports.repository.SessionRepository
+import fr.rebaze.domain.services.MetricsService
 import fr.rebaze.domain.services.metrics.errors.Exceptions.NotFound
-import fr.rebaze.domain.services.metrics.models.UserProgress
+import fr.rebaze.domain.services.metrics.models.{LevelProgress, UserProgress}
 import zio.json.{DecoderOps, DeriveJsonCodec, DeriveJsonDecoder, JsonCodec, JsonDecoder}
 import zio.nio.*
 import zio.nio.file.{Files, Path}
@@ -57,19 +59,20 @@ final case class MetricsServiceLive(sessionRepository: SessionRepository, rulesR
 
   override def getUsersProgressByDay(day: LocalDate): Task[Iterable[UserProgress]] =
     for {
-      userIdsWithRules <- sessionRepository.getLsfUsersWithRulesTrainedByDay(day)
+      userLevelsProgressAndRulesAnswers <- sessionRepository.getUsersLevelsProgressAndRulesAnswers(day)
 
-      metrics <- ZIO.foreachPar(userIdsWithRules) { userIdAndRulesIds =>
+      metrics <- ZIO.foreach(userLevelsProgressAndRulesAnswers) { userLevelsProgressAndRulesAnswers =>
                    for {
-                     nameAndFirstName <-
-                       sessionRepository.getUsersNameAndFirstName(userIdAndRulesIds.actorGuid)
-                     globalProgress   <- getGlobalProgressByUserId(userIdAndRulesIds.actorGuid)
+                     globalProgress            <- getGlobalProgressByUserId(userLevelsProgressAndRulesAnswers.actorGuid)
+                     rulesTrainingIdsWithAnswer = userLevelsProgressAndRulesAnswers.levelProgress.map(value => value._2).toList
                    } yield UserProgress(
-                     actorGuid = userIdAndRulesIds.actorGuid,
-                     lastname = nameAndFirstName.lastname,
-                     firstname = nameAndFirstName.firstname,
+                     actorGuid = userLevelsProgressAndRulesAnswers.actorGuid,
                      globalProgress,
-                     levelProgress = userIdAndRulesIds.levelProgress
+                     levelProgress = userLevelsProgressAndRulesAnswers.levelProgress.map(levelProgress =>
+                       LevelProgress(
+                         levelId = levelProgress._1,
+                         completionPercentage = levelProgress.completionPercentage
+                       ))
                    )
                  }
     } yield metrics.toSeq

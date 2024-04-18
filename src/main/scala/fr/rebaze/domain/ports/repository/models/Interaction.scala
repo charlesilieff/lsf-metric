@@ -1,4 +1,4 @@
-package fr.rebaze.models
+package fr.rebaze.domain.ports.repository.models
 
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder}
 
