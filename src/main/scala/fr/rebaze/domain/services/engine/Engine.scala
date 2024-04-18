@@ -3,9 +3,10 @@ package fr.rebaze.domain.services.engine
 import zio.{RIO, Task, ZIO}
 
 import java.time.LocalDateTime
+import scala.collection.immutable.SortedMap
 
-trait EngineService:
-  def isRuleLearned(ruleInteractions: Map[LocalDateTime, Boolean]): Task[Boolean]
-object EngineService:
-  def isRuleLearned(ruleInteractions: Map[LocalDateTime, Boolean]): RIO[EngineService, Boolean] =
-    ZIO.serviceWithZIO[EngineService](_.isRuleLearned(ruleInteractions))
+trait Engine:
+  def isRuleLearned(ruleInteractions: SortedMap[LocalDateTime, Boolean]): Task[Boolean]
+object Engine:
+  def isRuleLearned(ruleInteractions: SortedMap[LocalDateTime, Boolean]): RIO[Engine, Boolean] =
+    ZIO.serviceWithZIO[Engine](_.isRuleLearned(ruleInteractions))
