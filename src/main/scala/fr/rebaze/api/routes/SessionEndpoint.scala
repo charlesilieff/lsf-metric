@@ -1,5 +1,7 @@
 package fr.rebaze.api.routes
 
+import fr.rebaze.domain.ports.repository.LevelId
+import fr.rebaze.domain.ports.repository.models.RuleId
 import fr.rebaze.domain.ports.spark.Spark
 import fr.rebaze.domain.services.MetricsService
 import fr.rebaze.domain.services.metrics.models.{LevelProgressAndDuration, SessionMetric}
@@ -43,7 +45,9 @@ object Session:
                                  lastUseDate = sessionDuration.lastSession,
                                  levelsProgress = session
                                    .levelProgress.map[(String, LevelProgressAndDuration)](pp =>
-                                     pp.levelId.toString -> LevelProgressAndDuration(pp.completionPercentage)).toMap
+                                     pp.levelId.toString -> LevelProgressAndDuration(
+                                       pp.completionPercentage,
+                                       pp.rules.map((ruleId, answer) => (ruleId.toString, answer)))).toMap
                                )).withParallelism(4)
         _               <- ZIO.logInfo(s"Processed ${results.size} sessions !!")
 
