@@ -12,7 +12,7 @@ trait SessionRepository:
   def getUsersLevelsProgressAndRulesAnswers(day: LocalDate): Task[Iterable[UserLevelsProgressAndRulesAnswers]]
   def getUsersNameAndFirstName(userId: String): Task[UserFirstnameAndLastname]
   def getRulesProgressByUserId(userId: String): Task[RulesProgressByUserId]
-  def getLevelIdsByUserIdByDay(userId: String, day: LocalDate): Task[Iterable[String]]
+
 object SessionRepository:
   def getAllSessionsByActorGuid(guid: String): RIO[SessionRepository, Iterable[Session]]                                         =
     ZIO.serviceWithZIO[SessionRepository](_.getAllSessionsByActorGuid(guid))
@@ -24,5 +24,3 @@ object SessionRepository:
 
   def getRulesProgressByUserId(userId: String): RIO[SessionRepository, RulesProgressByUserId]            =
     ZIO.serviceWithZIO[SessionRepository](_.getRulesProgressByUserId(userId))
-  def getLevelIdsByUserIdByDay(userId: String, day: LocalDate): RIO[SessionRepository, Iterable[String]] =
-    ZIO.serviceWithZIO[SessionRepository](_.getLevelIdsByUserIdByDay(userId, day))

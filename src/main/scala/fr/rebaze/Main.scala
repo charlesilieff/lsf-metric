@@ -2,7 +2,7 @@ package fr.rebaze
 
 import fr.rebaze.api.routes.Endpoints
 import fr.rebaze.common.Layer
-import fr.rebaze.domain.services.MetricsService
+import fr.rebaze.domain.services.metrics.MetricsService
 import sttp.tapir.server.interceptor.cors.CORSConfig.AllowedOrigin
 import sttp.tapir.server.interceptor.cors.{CORSConfig, CORSInterceptor}
 import sttp.tapir.server.ziohttp

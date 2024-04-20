@@ -1,9 +1,7 @@
 package fr.rebaze.api.routes
 
-import fr.rebaze.domain.ports.repository.LevelId
-import fr.rebaze.domain.ports.repository.models.RuleId
 import fr.rebaze.domain.ports.spark.Spark
-import fr.rebaze.domain.services.MetricsService
+import fr.rebaze.domain.services.metrics.MetricsService
 import fr.rebaze.domain.services.metrics.models.{LevelProgressAndDuration, SessionMetric}
 import sttp.model.StatusCode
 import sttp.tapir.Endpoint
@@ -14,7 +12,7 @@ import zio.ZIO
 
 import java.time.LocalDate
 
-object Session:
+object SessionEndpoint:
   private val findOneGuid: Endpoint[Unit, LocalDate, ErrorInfo, Iterable[SessionMetric], Any] =
     endpoint
       .name("findOneGuid")
@@ -31,23 +29,19 @@ object Session:
     .serverLogicSuccess { localDate =>
       for {
         allUserProgress <- MetricsService.getUsersProgressByDay(localDate)
+        sessionDuration  = Spark.getSessionTimeByUserId(allUserProgress.map(_.actorGuid))
         _               <- ZIO.logInfo(s"Processing ${allUserProgress.size} lsf user sessions")
         results         <- ZIO
-                             .foreachPar(allUserProgress)(session =>
+                             .foreachPar(sessionDuration)(userProgress =>
                                for {
-                                 _ <- ZIO.logInfo(s"Processing session for actor ${session.actorGuid}")
+                                 _ <- ZIO.logInfo(s"Processing session for actor ${userProgress.userId}")
 
-                                 sessionDuration = Spark.getSessionTimeByUserId(session.actorGuid)
                                } yield SessionMetric(
-                                 userId = session.actorGuid,
-                                 trainingDuration = (sessionDuration.averageSessionTime * sessionDuration.sessionCount).toMillis,
-                                 completionPercentage = session.completionPercentage,
-                                 lastUseDate = sessionDuration.lastSession,
-                                 levelsProgress = session
-                                   .levelProgress.map[(String, LevelProgressAndDuration)](pp =>
-                                     pp.levelId.toString -> LevelProgressAndDuration(
-                                       pp.completionPercentage,
-                                       pp.rules.map((ruleId, answer) => (ruleId.toString, answer)))).toMap
+                                 userId = userProgress.userId,
+                                 trainingDuration = (userProgress.averageSessionTime * userProgress.sessionCount).toMillis,
+                                 completionPercentage = 0.5,
+                                 lastUseDate = userProgress.lastSession,
+                                 levelsProgress = Map.empty
                                )).withParallelism(4)
         _               <- ZIO.logInfo(s"Processed ${results.size} sessions !!")
 

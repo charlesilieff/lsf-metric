@@ -1,6 +1,5 @@
 package fr.rebaze
 
-import fr.rebaze.domain.ports.spark.Spark
 import zio.ZIO
 import zio.test.Assertion.*
 import zio.test.{ZIOSpecDefault, assertZIO}

@@ -1,5 +1,6 @@
-package fr.rebaze.domain.services
+package fr.rebaze.domain.services.metrics
 
+import fr.rebaze.domain.ports.repository.models.RuleId
 import fr.rebaze.domain.services.metrics.models.UserProgress
 import zio.*
 
@@ -7,7 +8,7 @@ import java.time.LocalDate
 
 trait MetricsService:
   def getUsersProgressByDay(day: LocalDate): Task[Iterable[UserProgress]]
-  val extractRulesIdFromJsonDirectExport: Task[Iterable[String]]
+  val extractRulesIdFromJsonDirectExport: Task[Iterable[RuleId]]
   def getGlobalProgressByUserId(userId: String): Task[Double]
   def getLevelIdsByUserIdByDay(userId: String, day: LocalDate): Task[Iterable[String]]
 object MetricsService:
@@ -15,7 +16,7 @@ object MetricsService:
     ZIO
       .serviceWithZIO[MetricsService](_.getUsersProgressByDay(day)).tap(value => ZIO.logInfo(s"Metrics for $day and ${value.size} users"))
 
-  val extractRulesIdFromJsonDirectExport: RIO[MetricsService, Iterable[String]] =
+  val extractRulesIdFromJsonDirectExport: RIO[MetricsService, Iterable[RuleId]] =
     ZIO.serviceWithZIO[MetricsService](_.extractRulesIdFromJsonDirectExport)
 
   def getGlobalProgressByUserId(userId: String): RIO[MetricsService, Double] =

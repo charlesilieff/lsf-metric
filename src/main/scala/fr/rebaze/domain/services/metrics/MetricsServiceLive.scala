@@ -1,42 +1,29 @@
 package fr.rebaze.domain.services.metrics
 
-
+import fr.rebaze.domain.ports.engine.Engine
 import fr.rebaze.domain.ports.repository.SessionRepository
-import fr.rebaze.domain.services.MetricsService
+import fr.rebaze.domain.ports.repository.models.RuleId
 import fr.rebaze.domain.services.metrics.errors.Exceptions.NotFound
-import fr.rebaze.domain.services.metrics.models.{LevelProgress, UserProgress}
-import zio.json.{DecoderOps, DeriveJsonCodec, DeriveJsonDecoder, JsonCodec, JsonDecoder}
+import fr.rebaze.domain.services.metrics.models.{Application, LevelProgress, UserProgress}
+import zio.json.{DecoderOps, JsonDecoder}
 import zio.nio.*
 import zio.nio.file.{Files, Path}
 import zio.{Ref, Task, ZIO, ZLayer}
 
 import java.net.URI
-import java.time.LocalDate
-
-case class Rule(guid: String)
-
-case class Level(rules: List[Rule])
-
-case class Application(levels: List[Level])
-
-object Application {
-  given JsonCodec[Rule]        =
-    DeriveJsonCodec.gen[Rule]
-  given JsonCodec[Level]       =
-    DeriveJsonCodec.gen[Level]
-  given JsonCodec[Application] =
-    DeriveJsonCodec.gen[Application]
-}
+import java.time.{Instant, LocalDate, LocalDateTime, ZoneId}
 
 object MetricsServiceLive:
-  val layer: ZLayer[SessionRepository, Nothing, MetricsServiceLive] =
+  val layer: ZLayer[SessionRepository & Engine, Nothing, MetricsServiceLive] =
     ZLayer(
       for {
+        engine      <- ZIO.service[Engine]
         sessionRepo <- ZIO.service[SessionRepository]
-        rulesRef    <- Ref.make[Option[Iterable[String]]](None)
-      } yield MetricsServiceLive(sessionRepo, rulesRef))
-final case class MetricsServiceLive(sessionRepository: SessionRepository, rulesRef: Ref[Option[Iterable[String]]]) extends MetricsService:
-  val extractRulesIdFromJsonDirectExport: Task[Iterable[String]] =
+        rulesRef    <- Ref.make[Option[Iterable[RuleId]]](None)
+      } yield MetricsServiceLive(sessionRepo, rulesRef, engine))
+final case class MetricsServiceLive(sessionRepository: SessionRepository, rulesRef: Ref[Option[Iterable[RuleId]]], engine: Engine)
+    extends MetricsService:
+  val extractRulesIdFromJsonDirectExport: Task[Iterable[RuleId]] =
     rulesRef.get.flatMap {
       case Some(rules) => ZIO.succeed(rules)
       case None        =>
@@ -63,16 +50,28 @@ final case class MetricsServiceLive(sessionRepository: SessionRepository, rulesR
 
       metrics <- ZIO.foreach(userLevelsProgressAndRulesAnswers) { userLevelsProgressAndRulesAnswers =>
                    for {
-                     globalProgress            <- getGlobalProgressByUserId(userLevelsProgressAndRulesAnswers.actorGuid)
-                     rulesTrainingIdsWithAnswer = userLevelsProgressAndRulesAnswers.levelProgress.map(value => value._2).toList
+                     globalProgress             <- getGlobalProgressByUserId(userLevelsProgressAndRulesAnswers.actorGuid)
+                     rulesTrainingIdsWithAnswer <-
+                       ZIO.foreach(
+                         userLevelsProgressAndRulesAnswers
+                           .levelProgress.flatMap(value =>
+                             value
+                               .rulesAnswers.map((ruleId, ruleAnswers) =>
+                                 (
+                                   ruleId,
+                                   engine.isRuleLearned(ruleAnswers.map((time, answer) =>
+                                     (LocalDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneId.systemDefault()), answer)))))))(
+                         (toto, tata) => tata.map(tyty => (toto, tyty)))
                    } yield UserProgress(
                      actorGuid = userLevelsProgressAndRulesAnswers.actorGuid,
                      globalProgress,
-                     levelProgress = userLevelsProgressAndRulesAnswers.levelProgress.map(levelProgress =>
-                       LevelProgress(
-                         levelId = levelProgress._1,
-                         completionPercentage = levelProgress.completionPercentage
-                       ))
+                     levelProgress = userLevelsProgressAndRulesAnswers
+                       .levelProgress.map(levelProgress =>
+                         LevelProgress(
+                           levelId = levelProgress._1,
+                           completionPercentage = levelProgress.completionPercentage,
+                           rulesTrainingIdsWithAnswer.toMap
+                         ))
                    )
                  }
     } yield metrics.toSeq
