@@ -25,27 +25,28 @@ object SessionEndpoint:
       )
       .out(jsonBody[Iterable[SessionMetric]])
 
-  val sessionLive: ZServerEndpoint[MetricsService, Any] = findOneGuid
-    .serverLogicSuccess { localDate =>
-      for {
+  val sessionLive: ZServerEndpoint[MetricsService, Any] = findOneGuid.serverLogicSuccess { localDate =>
+       for
         allUserProgress <- MetricsService.getUsersProgressByDay(localDate)
-        sessionDuration  = Spark.getSessionTimeByUserId(allUserProgress.map(_.actorGuid))
         _               <- ZIO.logInfo(s"Processing ${allUserProgress.size} lsf user sessions")
         results         <- ZIO
-                             .foreachPar(sessionDuration)(userProgress =>
+                             .foreachPar(allUserProgress)(session =>
                                for {
-                                 _ <- ZIO.logInfo(s"Processing session for actor ${userProgress.userId}")
+                                 _ <- ZIO.logInfo(s"Processing session for actor ${session.actorGuid}")
 
+                                 sessionDuration = Spark.getSessionTimeByUserId(session.actorGuid)
                                } yield SessionMetric(
-                                 userId = userProgress.userId,
-                                 trainingDuration = (userProgress.averageSessionTime * userProgress.sessionCount).toMillis,
-                                 completionPercentage = 0.5,
-                                 lastUseDate = userProgress.lastSession,
-                                 levelsProgress = Map.empty
+                                 userId = session.actorGuid,
+                                 trainingDuration = (sessionDuration.averageSessionTime * sessionDuration.sessionCount).toMillis,
+                                 completionPercentage = session.completionPercentage,
+                                 lastUseDate = sessionDuration.lastSession,
+                                 levelsProgress = session
+                                   .levelProgress.map[(String, LevelProgressAndDuration)](pp =>
+                                     pp.levelId.toString -> LevelProgressAndDuration(
+                                       pp.completionPercentage,
+                                       pp.rules.map((ruleId, answer) => (ruleId.toString, answer)))).toMap
                                )).withParallelism(4)
         _               <- ZIO.logInfo(s"Processed ${results.size} sessions !!")
-
-      } yield results
-
+      yield results
     }
   // private def SessionNotFoundMessage(guid: String): String = s"Session with guid ${guid} doesn't exist."

@@ -23,7 +23,9 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
   inline private def querySession                                                                                 = quote(
     querySchema[SessionRow](entity = "SessionInteractionsWithAutoincrementId", _.actorGuid -> "actorGuid", _.levelGuid -> "levelGuid"))
   private def sessionTimeStampRow(millisecondsTimestamp: Long): Quoted[Query[ActorAndInteractionAndLevelGuidRow]] = quote {
-    sql"""SELECT actorguid, levelguid, interaction FROM sessioninteractionswithautoincrementid WHERE actorguid LIKE '%@lsf'"""
+    sql"""SELECT actorguid, levelguid, interaction FROM sessioninteractionswithautoincrementid WHERE  ((interaction->>'timestamp')::bigint > ${lift(
+        millisecondsTimestamp)} AND (interaction->>'timestamp')::bigint < ${lift(
+        millisecondsTimestamp + MILLI_SECONDS_IN_DAY)} AND actorguid LIKE '%@lsf'"""
       .as[Query[ActorAndInteractionAndLevelGuidRow]]
   }
 
