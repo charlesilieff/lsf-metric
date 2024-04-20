@@ -27,14 +27,16 @@ object SessionEndpoint:
 
   val sessionLive: ZServerEndpoint[MetricsService, Any] = findOneGuid.serverLogicSuccess { localDate =>
        for
-        allUserProgress <- MetricsService.getUsersProgressByDay(localDate)
-        _               <- ZIO.logInfo(s"Processing ${allUserProgress.size} lsf user sessions")
+
+        allUserProgress <- MetricsService.getActorsProgressByDay(localDate)
+        _               <- ZIO.logInfo(s"Starting processing ${allUserProgress.size} sessions !")
         results         <- ZIO
                              .foreachPar(allUserProgress)(session =>
                                for {
-                                 _ <- ZIO.logInfo(s"Processing session for actor ${session.actorGuid}")
+                                 _ <- ZIO.logInfo(s"Spark processing session for actor ${session.actorGuid}")
 
                                  sessionDuration = Spark.getSessionTimeByUserId(session.actorGuid)
+                                 _ <- ZIO.logInfo(s"Spark processed session for actor ${session.actorGuid} !")
                                } yield SessionMetric(
                                  userId = session.actorGuid,
                                  trainingDuration = (sessionDuration.averageSessionTime * sessionDuration.sessionCount).toMillis,

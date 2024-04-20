@@ -1,6 +1,6 @@
 package fr.rebaze.domain.ports.repository
 
-import fr.rebaze.domain.ports.models.RulesProgressByUserId
+import fr.rebaze.domain.ports.models.LevelsProgressByUserId
 import fr.rebaze.domain.ports.repository.models.row.*
 import fr.rebaze.domain.ports.repository.models.{Interaction, LevelId, LevelProgressRepo, RuleId, UserLevelsProgressAndRulesAnswers, Session as SessionModel}
 import fr.rebaze.models.UserFirstnameAndLastname
@@ -25,16 +25,16 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
   private def sessionTimeStampRow(millisecondsTimestamp: Long): Quoted[Query[ActorAndInteractionAndLevelGuidRow]] = quote {
     sql"""SELECT actorguid, levelguid, interaction FROM sessioninteractionswithautoincrementid WHERE  ((interaction->>'timestamp')::bigint > ${lift(
         millisecondsTimestamp)} AND (interaction->>'timestamp')::bigint < ${lift(
-        millisecondsTimestamp + MILLI_SECONDS_IN_DAY)} AND actorguid LIKE '%@lsf'"""
+        millisecondsTimestamp + MILLI_SECONDS_IN_DAY)} AND actorguid LIKE '%@lsf')"""
       .as[Query[ActorAndInteractionAndLevelGuidRow]]
   }
 
-  private def progressAndActorGuidRow(actorGuid: String): Quoted[Query[ActorAndInteractionRow]] = quote {
-    sql"""SELECT DISTINCT actorguid, interaction FROM sessioninteractionswithautoincrementid WHERE actorguid = ${lift(
+  private def levelProgressAndActorGuidRow(actorGuid: String): Quoted[Query[ActorAndInteractionRow]] = quote {
+    sql"""SELECT DISTINCT actorguid,levelguid, interaction FROM sessioninteractionswithautoincrementid WHERE actorguid = ${lift(
         actorGuid)} AND (interaction->>'progress')::float > 0"""
       .as[Query[ActorAndInteractionRow]]
   }
-  override def getAllSessionsByActorGuid(actorGuid: String): Task[Iterable[SessionModel]]       =
+  override def getAllSessionsByActorGuid(actorGuid: String): Task[Iterable[SessionModel]]            =
     run(querySession.filter(_.actorGuid == lift(actorGuid)))
       .tap(x => ZIO.logDebug(s"Found ${x.length}")).map(values =>
         values
@@ -80,34 +80,31 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
             levelsProgress.map((ruleId, progress, rulesAnswers) => LevelProgressRepo(ruleId, progress, rulesAnswers)))
         ))
 
-  override def getUsersNameAndFirstName(userId: String): Task[UserFirstnameAndLastname] =
+  override def getUsersNameAndFirstName(actorGuid: String): Task[UserFirstnameAndLastname] =
     // remove "@lsf" at the end of userId :
-    val email = userId.substring(0, userId.length - 4)
+    val email = actorGuid.substring(0, actorGuid.length - 4)
     run(querySchema[AccountRow](entity = "dbaccount").filter(_.email == lift(email)).take(1))
       .map(value => value.head).map(value => UserFirstnameAndLastname(lastname = Some(value.surname), firstname = Some(value.name)))
 
-  override def getRulesProgressByUserId(userId: String): Task[RulesProgressByUserId] =
-    val progress            = run(progressAndActorGuidRow(userId))
-    val progressByUser      =
+  override def getRulesProgressByActorGuid(actorGuid: String): Task[LevelsProgressByUserId] =
+    val progress             = run(levelProgressAndActorGuidRow(actorGuid))
+    val progressByUser       =
       progress
         .map(value =>
           value
             .groupBy(_.actorGuid).headOption.map((userId, interactions) =>
-              (
-                userId,
-                interactions.map(interaction =>
-                  (interaction.interaction.value.ruleId, interaction.interaction.value.progress.getOrElse(0.0)))))).map(value =>
-          value.getOrElse((userId, List.empty)))
-    val maxProgressByRuleId = progressByUser
+              (userId, interactions.map(interaction => (interaction.levelId, interaction.interaction.value.progress.getOrElse(0.0)))))).map(
+          value => value.getOrElse((actorGuid, List.empty)))
+    val maxProgressByLevelId = progressByUser
       .map((userId, interactions) =>
         (
           userId,
-          interactions.foldLeft[Seq[(RuleId, Double)]](List.empty) {
-            case (acc, (ruleId, progress)) =>
-              acc.find(_._1 == ruleId) match {
-                case Some((_, maxProgress)) => if (progress > maxProgress) (ruleId, progress) +: acc.filterNot(_._1 == ruleId) else acc
-                case None                   => (ruleId, progress) +: acc
+          interactions.foldLeft[Seq[(LevelId, Double)]](List.empty) {
+            case (acc, (levelId, progress)) =>
+              acc.find(_._1 == levelId) match {
+                case Some((_, maxProgress)) => if (progress > maxProgress) (levelId, progress) +: acc.filterNot(_._1 == levelId) else acc
+                case None                   => (levelId, progress) +: acc
               }
           }))
-    maxProgressByRuleId
-      .map((userId, interactions) => RulesProgressByUserId(userId, interactions.toMap))
+    maxProgressByLevelId
+      .map((userId, interactions) => LevelsProgressByUserId(userId, interactions.toMap))
