@@ -73,9 +73,10 @@ final case class MetricsServiceLive(
                                                          rulesTrainingIdsWithAnswer
                                                        ))
                    } yield (userLevelProgressAndRulesAnswers.actorGuid,ActorProgress(
-                 
+                  
                      actorGlobalProgress,
-                     levelProgress
+                     levelProgress,
+                     knownRulesNbr = rulesTrainingIdsWithAnswer.count(_._2), totalRulesNbr = rulesTrainingIdsWithAnswer.size
                    ))
                  }
       _       <- ZIO.logInfo(s" Global progress for $day and ${actorLevelsProgressAndRulesAnswers.size} users calculated !")
