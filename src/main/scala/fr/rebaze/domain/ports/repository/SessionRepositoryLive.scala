@@ -2,15 +2,7 @@ package fr.rebaze.domain.ports.repository
 
 import fr.rebaze.domain.ports.models.LevelsProgressByActorGuid
 import fr.rebaze.domain.ports.repository.models.row.*
-import fr.rebaze.domain.ports.repository.models.{
-  ActorGuid,
-  Interaction,
-  LevelId,
-  LevelProgressRepo,
-  RuleId,
-  UserLevelsProgressAndRulesAnswers,
-  Session as SessionModel
-}
+import fr.rebaze.domain.ports.repository.models.{ActorGuid, Interaction, LevelId, LevelProgressRepo, RuleId, UserLevelsProgressAndRulesAnswers, Session as SessionModel}
 import fr.rebaze.models.UserFirstnameAndLastname
 import io.getquill.*
 import io.getquill.jdbczio.Quill
@@ -32,29 +24,23 @@ object SessionRepositoryLive:
 final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends SessionRepository:
   import quill.*
 
-  inline private def querySession                                                                                             = quote(
+  inline private def querySession = quote(
     querySchema[SessionRow](entity = "SessionInteractionsWithAutoincrementId", _.actorGuid -> "actorGuid", _.levelGuid -> "levelGuid"))
   private def allInteractionsForActorList(actorGuids: Iterable[ActorGuid]): Quoted[Query[ActorAndInteractionAndLevelGuidRow]] =
-    def innerQuery = quote((actorGuid: Query[ActorGuid]) =>
-      querySchema[ActorGuidRow](entity = "SessionInteractionsWithAutoincrementId", _.actorGuid -> "actorGuid").filter(p =>
-        actorGuid.contains(p.actorGuid)))
-    quote {
-      querySchema[ActorAndInteractionAndLevelGuidRow](
-        entity = "SessionInteractionsWithAutoincrementId",
-        _.actorGuid -> "actorGuid",
-        _.levelGuid -> "levelGuid").filter(p => innerQuery(liftQuery(actorGuids)).contains(p.actorGuid))
-    }
-//    val actorGuidString = actorGuids.mkString("'", "', '", "'")
-//    println(s"actorGuidString = $actorGuidString")
-////    val query2          = quote {
-////      sql"""WITH actor_guids AS (SELECT unnest(ARRAY[${lift(actorGuids.mkString("'", "', '", "'"))}]) AS actor_guid)
-////      """
-////    }
+//    def innerQuery = quote((actorGuid: Query[ActorGuid]) =>
+//      querySchema[ActorGuidRow](entity = "SessionInteractionsWithAutoincrementId", _.actorGuid -> "actorGuid").filter(p =>
+//        actorGuid.contains(p.actorGuid)))
 //    quote {
-//      sql"""WITH actor_guids AS (SELECT unnest(ARRAY[$lift(actorGuidString)]) AS actor_guid)
-//           SELECT actorguid, levelguid, interaction FROM sessioninteractionswithautoincrementid WHERE actorguid IN (SELECT actor_guid FROM actor_guids)"""
-//        .as[Query[ActorAndInteractionAndLevelGuidRow]]
+//      querySchema[ActorAndInteractionAndLevelGuidRow](
+//        entity = "SessionInteractionsWithAutoincrementId",
+//        _.actorGuid -> "actorGuid",
+//        _.levelGuid -> "levelGuid").filter(p => innerQuery(liftQuery(actorGuids)).contains(p.actorGuid))
 //    }
+    quote {
+      sql"""WITH actor_guids AS (SELECT unnest(ARRAY[${liftQuery(actorGuids)}]) AS actor_guid)
+           SELECT actorguid, levelguid, interaction FROM sessioninteractionswithautoincrementid WHERE actorguid IN (SELECT actor_guid FROM actor_guids)"""
+        .as[Query[ActorAndInteractionAndLevelGuidRow]]
+    }
 
   private def actorRow(millisecondsTimestamp: Long): Quoted[Query[ActorGuidRow]] = quote {
 //    sql"""SELECT DISTINCT actorguid FROM sessioninteractionswithautoincrementid WHERE
