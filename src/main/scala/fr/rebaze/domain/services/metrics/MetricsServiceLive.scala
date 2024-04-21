@@ -62,17 +62,18 @@ final case class MetricsServiceLive(
                          .levelProgress.flatMap(value => value.rulesAnswers).map((ruleId, ruleAnswers) =>
                            (ruleId, engine.isRuleLearned(ruleAnswers)))
                      rulesTrainingIdsWithAnswer <-
-                       ZIO.foreach(rulesWithTimestampedAnswers)((toto, tata) => tata.map(tyty => (toto, tyty)))
+                       ZIO.foreach(rulesWithTimestampedAnswers)((ruleId, answer) => answer.map(answer => (ruleId, answer)))
+                     levelProgress               = userLevelsProgressAndRulesAnswers
+                                                     .levelProgress.map(levelProgress =>
+                                                       LevelProgress(
+                                                         levelId = levelProgress._1,
+                                                         completionPercentage = levelProgress.completionPercentage,
+                                                         rulesTrainingIdsWithAnswer.toMap
+                                                       ))
                    } yield ActorProgress(
                      actorGuid = userLevelsProgressAndRulesAnswers.actorGuid,
                      actorGlobalProgress,
-                     levelProgress = userLevelsProgressAndRulesAnswers
-                       .levelProgress.map(levelProgress =>
-                         LevelProgress(
-                           levelId = levelProgress._1,
-                           completionPercentage = levelProgress.completionPercentage,
-                           rulesTrainingIdsWithAnswer.toMap
-                         ))
+                     levelProgress
                    )
                  }
       _       <- ZIO.logInfo(s" Global progress for $day and ${userLevelsProgressAndRulesAnswers.size} users calculated !")
