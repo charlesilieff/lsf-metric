@@ -1,6 +1,7 @@
 package fr.rebaze.api.routes
 
 import fr.rebaze.api.routes.SessionEndpoint.sessionLive
+import fr.rebaze.domain.services.metrics.MetricsService
 import sttp.tapir.*
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import sttp.tapir.ztapir.ZServerEndpoint
@@ -17,9 +18,10 @@ object Endpoints:
 
   val apiEndpoints: List[ZServerEndpoint[Any, Any]] = List(helloServerEndpoint)
 
-  val sessionEndpoint = sessionLive
+  val sessionEndpoint: ZServerEndpoint[MetricsService, Any] = sessionLive
 
   val docEndpoints: List[ZServerEndpoint[Any, Any]] = SwaggerInterpreter()
     .fromServerEndpoints[Task](apiEndpoints, "lsf-metrics", "1.0.0")
 
-  val all: List[ZServerEndpoint[Any, Any]] = apiEndpoints ++ docEndpoints
+  val all: List[ZServerEndpoint[Any, Any]] = apiEndpoints
+  // ++ docEndpoints

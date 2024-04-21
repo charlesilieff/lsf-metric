@@ -36,14 +36,9 @@ object RawDataTransformation:
       .withColumn("duration", col("max") - col("min"))
       .groupBy("userId")
       .agg(
-        to_timestamp((avg("duration") / 1000) - 3600)
-          .cast("Timestamp")
+        avg("duration")
           .as("averageSessionTime")
       )
-//      .withColumn(
-//        "averageSessionTime",
-//        date_format(col("averageSessionTime"), "HH:mm:ss")
-//      )
 //
   def firstAndLastSession(dataFrame: Dataset[SessionIdsByUserId]): DataFrame =
     dataFrame

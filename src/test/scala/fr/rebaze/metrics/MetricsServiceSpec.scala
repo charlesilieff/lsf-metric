@@ -1,6 +1,7 @@
 package fr.rebaze.metrics
 
 import fr.rebaze.common.Layer
+import fr.rebaze.domain.ports.repository.models.ActorGuid
 import fr.rebaze.domain.services.metrics.MetricsService
 import zio.*
 import zio.test.Assertion.*
@@ -29,7 +30,7 @@ object MetricsServiceSpec extends ZIOSpecDefault:
     test("get global average progress for userId, this user has only progress on non existing rules") {
       val userId  = "charles@voltaire"
       val metrics = MetricsService
-        .getGlobalProgressByActorGuid(userId).tap(values => ZIO.logInfo(s"Metrics: ${values}"))
+        .getGlobalProgressByActorGuid(ActorGuid(userId)).tap(values => ZIO.logInfo(s"Metrics: ${values}"))
 
       // then
       assertZIO(metrics)(equalTo(0.0))
@@ -37,7 +38,7 @@ object MetricsServiceSpec extends ZIOSpecDefault:
     test("get global average progress for userId") {
       val userId  = "anthony.b@rebaze.fr@lsf"
       val metrics = MetricsService
-        .getGlobalProgressByActorGuid(userId).tap(values => ZIO.logInfo(s"Metrics: ${values}"))
+        .getGlobalProgressByActorGuid(ActorGuid(userId)).tap(values => ZIO.logInfo(s"Metrics: ${values}"))
 
       // then
       assertZIO(metrics)(equalTo(0.0013433508640120209))

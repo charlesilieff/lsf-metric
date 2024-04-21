@@ -1,9 +1,10 @@
 package fr.rebaze.domain.services.metrics.models
 
+import fr.rebaze.domain.ports.repository.models.ActorGuid
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder}
 
 case class SessionMetric(
-  userId: String,
+  userId: ActorGuid,
   trainingDuration: Long,
   completionPercentage: Double,
   lastUseDate: Long,

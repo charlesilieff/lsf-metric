@@ -29,7 +29,7 @@ object SessionEndpoint:
        for
 
         allUserProgress <- MetricsService.getActorsProgressByDay(localDate)
-        _               <- ZIO.logInfo(s"Starting processing ${allUserProgress.size} sessions !")
+        _               <- ZIO.logInfo(s"Starting processing ${allUserProgress.size} users !")
         results         <- ZIO
                              .foreachPar(allUserProgress)(session =>
                                for {
@@ -39,7 +39,7 @@ object SessionEndpoint:
                                  _ <- ZIO.logInfo(s"Spark processed session for actor ${session.actorGuid} !")
                                } yield SessionMetric(
                                  userId = session.actorGuid,
-                                 trainingDuration = (sessionDuration.averageSessionTime * sessionDuration.sessionCount).toMillis,
+                                 trainingDuration = (sessionDuration.averageSessionTime * sessionDuration.sessionCount),
                                  completionPercentage = session.completionPercentage,
                                  lastUseDate = sessionDuration.lastSession,
                                  levelsProgress = session

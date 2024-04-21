@@ -1,6 +1,7 @@
 package fr.rebaze.metrics
 
 import fr.rebaze.domain.ports.engine.{Engine, EngineLive}
+import fr.rebaze.domain.ports.repository.models.ActorGuid
 import fr.rebaze.domain.services.metrics.{MetricsService, MetricsServiceLive}
 import fr.rebaze.fake.SessionRepositoryFake
 import zio.*
@@ -19,28 +20,31 @@ object MetricsServiceSpecWithFakeRepo extends ZIOSpecDefault:
     },
     test("Get global progress user has not trained") {
       // given
-      val globalProgress = MetricsService.getGlobalProgressByActorGuid("not-trained-user", Path("/src/main/resources/rules/tests/"))
+      val globalProgress =
+        MetricsService.getGlobalProgressByActorGuid(ActorGuid("not-trained-user"), Path("/src/main/resources/rules/tests/"))
 
       // then s
       assertZIO(globalProgress)(equalTo(0.0))
     },
     test("Get global progress user 100% trained") {
       // given
-      val globalProgress = MetricsService.getGlobalProgressByActorGuid("100-trained-user", Path("/src/main/resources/rules/tests/"))
+      val globalProgress =
+        MetricsService.getGlobalProgressByActorGuid(ActorGuid("100-trained-user"), Path("/src/main/resources/rules/tests/"))
 
       // then s
       assertZIO(globalProgress)(equalTo(1.0))
     },
     test("Get global progress user 50% trained") {
       // given
-      val globalProgress = MetricsService.getGlobalProgressByActorGuid("50-trained-user", Path("/src/main/resources/rules/tests/"))
+      val globalProgress =
+        MetricsService.getGlobalProgressByActorGuid(ActorGuid("50-trained-user"), Path("/src/main/resources/rules/tests/"))
 
       // then s
       assertZIO(globalProgress)(equalTo(0.5))
     },
     test("Get global progress user 30% trained") {
       // given
-      val globalProgress = MetricsService.getGlobalProgressByActorGuid("26-trained-user", Path("/src/main/resources/rules/tests/"))
+      val globalProgress = MetricsService.getGlobalProgressByActorGuid(ActorGuid("26-trained-user"), Path("/src/main/resources/rules/tests/"))
 
       // then s
       assertZIO(globalProgress)(equalTo(0.26666666666666666))

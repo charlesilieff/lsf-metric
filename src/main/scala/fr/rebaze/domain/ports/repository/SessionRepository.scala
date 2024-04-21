@@ -1,6 +1,6 @@
 package fr.rebaze.domain.ports.repository
 
-import fr.rebaze.domain.ports.models.LevelsProgressByUserId
+import fr.rebaze.domain.ports.models.LevelsProgressByActorGuid
 import fr.rebaze.domain.ports.repository.models.*
 import fr.rebaze.models.UserFirstnameAndLastname
 import zio.*
@@ -8,18 +8,21 @@ import zio.*
 import java.time.LocalDate
 
 trait SessionRepository:
-  def getAllSessionsByActorGuid(actorGuid: String): Task[Iterable[Session]]
-  def getUsersLevelsProgressAndRulesAnswers(day: LocalDate): Task[Iterable[UserLevelsProgressAndRulesAnswers]]
-  def getUsersNameAndFirstName(actorGuid: String): Task[UserFirstnameAndLastname]
-  def getRulesProgressByActorGuid(actorGuid: String): Task[LevelsProgressByUserId]
+  def getAllSessionsByActorGuid(actorGuid: ActorGuid): Task[Iterable[Session]]
+  def getActorsLevelsProgressAndRulesAnswers(actorGuids: Iterable[ActorGuid]): Task[Iterable[UserLevelsProgressAndRulesAnswers]]
+  def getUsersNameAndFirstName(actorGuid: ActorGuid): Task[UserFirstnameAndLastname]
+  def getRulesProgressByActorGuid(actorGuid: ActorGuid): Task[LevelsProgressByActorGuid]
+  def getActorGuidsByDay(day: LocalDate): Task[Iterable[ActorGuid]]
 object SessionRepository:
-  def getAllSessionsByActorGuid(actorGuid: String): RIO[SessionRepository, Iterable[Session]]                                    =
+  def getAllSessionsByActorGuid(actorGuid: ActorGuid): RIO[SessionRepository, Iterable[Session]]                                    =
     ZIO.serviceWithZIO[SessionRepository](_.getAllSessionsByActorGuid(actorGuid))
-  def getUsersLevelsProgressAndRulesAnswers(day: LocalDate): RIO[SessionRepository, Iterable[UserLevelsProgressAndRulesAnswers]] =
-    ZIO.serviceWithZIO[SessionRepository](_.getUsersLevelsProgressAndRulesAnswers(day))
+  def getActorsLevelsProgressAndRulesAnswers(actorGuids: List[ActorGuid]): RIO[SessionRepository, Iterable[UserLevelsProgressAndRulesAnswers]] =
+    ZIO.serviceWithZIO[SessionRepository](_.getActorsLevelsProgressAndRulesAnswers(actorGuids))
 
-  def getUsersNameAndFirstName(actorGuid: String): RIO[SessionRepository, UserFirstnameAndLastname] =
+  def getUsersNameAndFirstName(actorGuid: ActorGuid): RIO[SessionRepository, UserFirstnameAndLastname] =
     ZIO.serviceWithZIO[SessionRepository](_.getUsersNameAndFirstName(actorGuid))
 
-  def getRulesProgressByActorGuid(actorGuid: String): RIO[SessionRepository, LevelsProgressByUserId] =
+  def getRulesProgressByActorGuid(actorGuid: ActorGuid): RIO[SessionRepository, LevelsProgressByActorGuid] =
     ZIO.serviceWithZIO[SessionRepository](_.getRulesProgressByActorGuid(actorGuid))
+  def getActorGuidsByDay(day: LocalDate): RIO[SessionRepository, Iterable[ActorGuid]]                   =
+    ZIO.serviceWithZIO[SessionRepository](_.getActorGuidsByDay(day))
