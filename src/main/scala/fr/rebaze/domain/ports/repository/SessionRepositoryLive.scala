@@ -27,16 +27,29 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
   inline private def querySession                                                                                             = quote(
     querySchema[SessionRow](entity = "SessionInteractionsWithAutoincrementId", _.actorGuid -> "actorGuid", _.levelGuid -> "levelGuid"))
   private def allInteractionsForActorList(actorGuids: Iterable[ActorGuid]): Quoted[Query[ActorAndInteractionAndLevelGuidRow]] =
-
-    val actorGuidString   = actorGuids.mkString("'", "', '", "'")
-    val actorPreSelection = s"""WITH actor_guids AS (SELECT unnest(ARRAY[$actorGuidString]) AS actor_guid)"""
+    def innerQuery = quote((actorGuid: Query[ActorGuid]) =>
+      querySchema[ActorGuidRow](entity = "SessionInteractionsWithAutoincrementId", _.actorGuid -> "actorGuid").filter(p =>
+        actorGuid.contains(p.actorGuid)))
     quote {
-      sql"""$actorPreSelection SELECT actorguid, levelguid, interaction FROM sessioninteractionswithautoincrementid AND actorguid LIKE '%@lsf'"""
-        .as[Query[ActorAndInteractionAndLevelGuidRow]]
+      querySchema[ActorAndInteractionAndLevelGuidRow](
+        entity = "SessionInteractionsWithAutoincrementId",
+        _.actorGuid -> "actorGuid",
+        _.levelGuid -> "levelGuid").filter(p => innerQuery(liftQuery(actorGuids)).contains(p.actorGuid))
     }
+//    val actorGuidString = actorGuids.mkString("'", "', '", "'")
+//    println(s"actorGuidString = $actorGuidString")
+////    val query2          = quote {
+////      sql"""WITH actor_guids AS (SELECT unnest(ARRAY[${lift(actorGuids.mkString("'", "', '", "'"))}]) AS actor_guid)
+////      """
+////    }
+//    quote {
+//      sql"""WITH actor_guids AS (SELECT unnest(ARRAY['abbracciamento.anais@gmail.com@lsf', 'akira.gargaut@gmail.com@lsf', 'antmarc@hotmail.fr@lsf', 'axel.cottet@wanadoo.fr@lsf', 'beaufils.ba@gmail.com@lsf', 'bichefamily49@orange.fr@lsf', 'boudaoudmaya5@gmail.com@lsf', 'c.boucebha@hotmail.fr@lsf', 'camille-ld@hotmail.fr@lsf', 'clara.aizac@gmail.com@lsf', 'delphinekravetz@yahoo.fr@lsf', 'dropetzabou@outlook.fr@lsf', 'elfy.garcia@orange.fr@lsf', 'erickbdf.et@gmail.com@lsf', 'fanycontact@gmail.com@lsf', 'framboise140313@gmail.com@lsf', 'gaelle.frassin@gmail.com@lsf', 'galia.calligaro@hotmail.fr@lsf', 'guilleyour@gmail.com@lsf', 'herve0411@gmail.com@lsf', 'ines.lionnet@yahoo.com@lsf', 'isaraffray@hotmail.com@lsf', 'jaminenola07@gmail.com@lsf', 'killianabaya53@gmail.com@lsf', 'lapinou048@gmail.com@lsf', 'lea.colin33@gmail.com@lsf', 'lessbennao@gmail.com@lsf', 'lilou3bel@gmail.com@lsf', 'loicbroche@hotmail.com@lsf', 'louise.cambourian@gmail.com@lsf', 'manonjacobpro@gmail.com@lsf', 'manuateb@gmail.com@lsf', 'margaux.lionis@gmail.com@lsf', 'marianne.lejey@epnak.org@lsf', 'marine.durand@hotmail.fr@lsf', 'maxime@saumon.io@lsf', 'meissane072@gmail.com@lsf', 'melissadewaal@laposte.net@lsf', 'milovllmnt@gmail.com@lsf', 'monvoisin_melanie@yahoo.fr@lsf', 'nao.guilbeau@gmail.com@lsf', 'pronostcecilia@gmail.com@lsf', 'rchl.engrand@gmail.com@lsf', 'rosedelaygue@gmail.com@lsf', 'sammaheu@gmx.es@lsf', 'sylvainmondange@orange.fr@lsf', 'terra143100@gmail.com@lsf', 'tifanie.jaillet@aliceadsl.fr@lsf', 'valerie@ramier.net@lsf', 'veronique.langlois2@free.fr@lsf', 'vilnays@hotmail.fr@lsf', 'yanick.piscitelli@orange.fr@lsf', 'yann.botino@gmail.com@lsf', 'yumi.gargaut@proton.me@lsf']) AS actor_guid)
+//           SELECT actorguid, levelguid, interaction FROM sessioninteractionswithautoincrementid WHERE actorguid IN (SELECT actor_guid FROM actor_guids)"""
+//        .as[Query[ActorAndInteractionAndLevelGuidRow]]
+//    }
 
   private def actorRow(millisecondsTimestamp: Long): Quoted[Query[ActorGuidRow]] = quote {
-    sql"""SELECT actorguid FROM sessioninteractionswithautoincrementid WHERE
+    sql"""SELECT DISTINCT actorguid FROM sessioninteractionswithautoincrementid WHERE
              ((interaction->>'timestamp')::bigint > ${lift(millisecondsTimestamp)} AND (interaction->>'timestamp')::bigint < ${lift(
         millisecondsTimestamp + MILLI_SECONDS_IN_DAY)} AND actorguid LIKE '%@lsf')"""
       .as[Query[ActorGuidRow]]
@@ -55,7 +68,7 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
 
   override def getActorsLevelsProgressAndRulesAnswers(actorGuids: Iterable[ActorGuid]): Task[Iterable[UserLevelsProgressAndRulesAnswers]] =
     run(allInteractionsForActorList(actorGuids))
-      .tap(x => ZIO.logInfo(s"Found ${x.length} actors interactions for ${actorGuids}")).map(
+      .tap(x => ZIO.logInfo(s"Found ${x.length} actors interactions for ${actorGuids.size} actors")).map(
         _.groupBy(_.actorGuid).map(userAndLevelAndInteraction =>
 
           val levelsProgress = userAndLevelAndInteraction
@@ -124,4 +137,4 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
   override def getActorGuidsByDay(day: LocalDate): Task[Iterable[ActorGuid]] =
     val timestamp                = Timestamp.valueOf(day.atStartOfDay())
     val timestampsInMilliSeconds = timestamp.getTime
-    run(actorRow(timestampsInMilliSeconds)).map(_.map(_.actorGuid))
+    run(actorRow(timestampsInMilliSeconds)).map(_.map(_.actorGuid)).tap(x => ZIO.logInfo(s"Found ${x.size} actors for ${day}"))

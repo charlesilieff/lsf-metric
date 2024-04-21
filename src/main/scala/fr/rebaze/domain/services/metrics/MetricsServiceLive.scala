@@ -50,7 +50,7 @@ final case class MetricsServiceLive(
   override def getActorsProgressByDay(day: LocalDate): Task[Iterable[ActorProgress]] =
     for {
       actorGuids                         <- sessionRepository.getActorGuidsByDay(day)
-      _                                  <- ZIO.logInfo(s"Starting get users global progress for date ${day}")
+      _                                  <- ZIO.logInfo(s"Starting get users global progress for date ${day} and ${actorGuids.size} actors !")
       actorLevelsProgressAndRulesAnswers <- sessionRepository.getActorsLevelsProgressAndRulesAnswers(actorGuids)
       _                                  <- ZIO.logInfo(s"Users levels progress and rules answers for $day found !")
       _                                  <- ZIO.logInfo(s"Starting to calculate global progress for $day and ${actorLevelsProgressAndRulesAnswers.size} users !")
@@ -64,13 +64,13 @@ final case class MetricsServiceLive(
                          .levelProgress.flatMap(value => value.rulesAnswers).map((ruleId, ruleAnswers) =>
                            (ruleId, engine.isRuleLearned(ruleAnswers)))
                      rulesTrainingIdsWithAnswer <-
-                       ZIO.foreach(rulesWithTimestampedAnswers)((ruleId, answer) => answer.map(answer => (ruleId, answer)))
+                       ZIO.foreach(rulesWithTimestampedAnswers)((ruleId, answer) => answer.map(answer => (ruleId, answer))).map(_.toMap)
                      levelProgress               = userLevelProgressAndRulesAnswers
                                                      .levelProgress.map(levelProgress =>
                                                        LevelProgress(
                                                          levelId = levelProgress._1,
                                                          completionPercentage = levelProgress.completionPercentage,
-                                                         rulesTrainingIdsWithAnswer.toMap
+                                                         rulesTrainingIdsWithAnswer
                                                        ))
                    } yield ActorProgress(
                      actorGuid = userLevelProgressAndRulesAnswers.actorGuid,
