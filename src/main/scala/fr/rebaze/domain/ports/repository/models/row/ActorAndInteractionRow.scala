@@ -5,6 +5,6 @@ import io.getquill.JsonValue
 
 case class ActorAndInteractionRow(
   actorGuid: String,
-  levelId: LevelId,
+  levelGuid: LevelId,
   interaction: JsonValue[Interaction]
 )

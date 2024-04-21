@@ -2,7 +2,7 @@ package fr.rebaze.domain.services.metrics
 
 import fr.rebaze.domain.ports.engine.Engine
 import fr.rebaze.domain.ports.repository.SessionRepository
-import fr.rebaze.domain.ports.repository.models.RuleId
+import fr.rebaze.domain.ports.repository.models.{RuleId,LevelId}
 import fr.rebaze.domain.services.metrics.errors.Exceptions.NotFound
 import fr.rebaze.domain.services.metrics.models.{ActorProgress, Application, LevelProgress}
 import zio.json.{DecoderOps, JsonDecoder}
@@ -19,14 +19,14 @@ object MetricsServiceLive:
       for {
         engine      <- ZIO.service[Engine]
         sessionRepo <- ZIO.service[SessionRepository]
-        rulesRef    <- Ref.make[Option[Iterable[RuleId]]](None)
+        rulesRef    <- Ref.make[Option[Iterable[LevelId]]](None)
       } yield MetricsServiceLive(sessionRepo, rulesRef, engine))
 final case class MetricsServiceLive(
   sessionRepository: SessionRepository,
-  rulesRef: Ref[Option[Iterable[RuleId]]],
+  rulesRef: Ref[Option[Iterable[LevelId]]],
   engine: Engine
 ) extends MetricsService:
-  override def extractRulesIdFromJsonDirectExport(path: Path = Path("/src/main/resources/rules/")): Task[Iterable[RuleId]] =
+  override def extractLevelIdsFromJsonDirectExport(path: Path = Path("/src/main/resources/rules/")): Task[Iterable[LevelId]] =
     rulesRef.get.flatMap {
       case Some(rules) => ZIO.succeed(rules)
       case None        =>
@@ -39,12 +39,12 @@ final case class MetricsServiceLive(
                      .foreachPar(filePaths)(filePath => Files.readAllBytes(Path(filePath))).mapBoth(
                        e => NotFound(e.getMessage),
                        bytes => bytes.map(byte => new String(byte.toArray, "UTF-8")))
-          rules <- ZIO
+          levelIds <- ZIO
                      .foreachPar(files)(file => ZIO.fromEither(file.fromJson[Application]).mapError(e => NotFound(e))).map(files =>
-                       files.map(_.levels)).map(files => files.map(_.flatMap(_.rules)).flatMap(_.map(_.guid)))
-          _     <- rulesRef.set(Some(rules))
-          _     <- ZIO.logInfo(s"Rules extracted: ${rules.size}")
-        } yield rules
+                       files.map(_.levels)).map(files => files.flatMap(_.map(_.guid)))
+          _     <- rulesRef.set(Some(levelIds))
+          _     <- ZIO.logInfo(s"LevelIds extracted: ${levelIds.size}")
+        } yield levelIds
     }
 
   override def getActorsProgressByDay(day: LocalDate): Task[Iterable[ActorProgress]] =
@@ -85,14 +85,14 @@ final case class MetricsServiceLive(
 
   override def getGlobalProgressByActorGuid(actorGuid: String, path: Path = Path("/src/main/resources/rules/")): Task[Double] =
     for {
-      _                     <- ZIO.logDebug(s"Starting to calculate global progress for user $actorGuid")
+      _                     <- ZIO.logInfo(s"Starting to calculate global progress for user $actorGuid")
       rulesProgressByUserId <- sessionRepository.getRulesProgressByActorGuid(actorGuid)
       rulesOption           <- rulesRef.get
-      rules                 <- ZIO.fromOption(rulesOption).catchAll(_ => extractRulesIdFromJsonDirectExport(path))
+      rules                 <- ZIO.fromOption(rulesOption).catchAll(_ => extractLevelIdsFromJsonDirectExport(path))
       rulesCount             = rules.size
       progressExistingRules  = rulesProgressByUserId.progress.filter((ruleId, _) => rules.toSeq.contains(ruleId))
       average                = progressExistingRules.values.sum / rulesCount
-      _                     <- ZIO.logDebug(s"Global progress for user $actorGuid calculated !")
+      _                     <- ZIO.logInfo(s"Global progress for user $actorGuid calculated !")
     } yield average
 
   // TODO: delete this method

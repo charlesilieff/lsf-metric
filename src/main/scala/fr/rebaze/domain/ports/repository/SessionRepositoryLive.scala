@@ -93,7 +93,9 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
         .map(value =>
           value
             .groupBy(_.actorGuid).headOption.map((userId, interactions) =>
-              (userId, interactions.map(interaction => (interaction.levelId, interaction.interaction.value.progress.getOrElse(0.0)))))).map(
+              (
+                userId,
+                interactions.map(interaction => (interaction.levelGuid, interaction.interaction.value.progress.getOrElse(0.0)))))).map(
           value => value.getOrElse((actorGuid, List.empty)))
     val maxProgressByLevelId = progressByUser
       .map((userId, interactions) =>

@@ -24,3 +24,7 @@ final case class SessionRepositoryFake() extends SessionRepository:
     case "not-trained-user" => ZIO.succeed(LevelsProgressByUserId(actorGuid, Map.empty))
     case "100-trained-user" =>
       ZIO.succeed(LevelsProgressByUserId(actorGuid, Map(LevelId("1") -> 1.0, LevelId("2") -> 1.0, LevelId("3") -> 1.0)))
+    case "50-trained-user"  =>
+      ZIO.logInfo("50%").as(LevelsProgressByUserId(actorGuid, Map(LevelId("1") -> 0.5, LevelId("2") -> 0.5, LevelId("3") -> 0.5)))
+    case "26-trained-user"  =>
+      ZIO.logInfo("26%").as(LevelsProgressByUserId(actorGuid, Map(LevelId("1") -> 0.3, LevelId("2") -> 0.0, LevelId("3") -> 0.5)))
