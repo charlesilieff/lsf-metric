@@ -2,7 +2,15 @@ package fr.rebaze.domain.ports.repository
 
 import fr.rebaze.domain.ports.models.LevelsProgressByActorGuid
 import fr.rebaze.domain.ports.repository.models.row.*
-import fr.rebaze.domain.ports.repository.models.{ActorGuid, Interaction, LevelId, LevelProgressRepo, RuleId, UserLevelsProgressAndRulesAnswers, Session as SessionModel}
+import fr.rebaze.domain.ports.repository.models.{
+  ActorGuid,
+  Interaction,
+  LevelId,
+  LevelProgressRepo,
+  RuleId,
+  UserLevelsProgressAndRulesAnswers,
+  Session as SessionModel
+}
 import fr.rebaze.models.UserFirstnameAndLastname
 import io.getquill.*
 import io.getquill.jdbczio.Quill
@@ -49,9 +57,11 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
 //    }
 
   private def actorRow(millisecondsTimestamp: Long): Quoted[Query[ActorGuidRow]] = quote {
-    sql"""SELECT DISTINCT actorguid FROM sessioninteractionswithautoincrementid WHERE
-             ((interaction->>'timestamp')::bigint > ${lift(millisecondsTimestamp)} AND (interaction->>'timestamp')::bigint < ${lift(
-        millisecondsTimestamp + MILLI_SECONDS_IN_DAY)} AND actorguid LIKE '%@lsf')"""
+//    sql"""SELECT DISTINCT actorguid FROM sessioninteractionswithautoincrementid WHERE
+//             ((interaction->>'timestamp')::bigint > ${lift(millisecondsTimestamp)} AND (interaction->>'timestamp')::bigint < ${lift(
+//        millisecondsTimestamp + MILLI_SECONDS_IN_DAY)} AND actorguid LIKE '%@lsf')"""
+//      .as[Query[ActorGuidRow]]
+    sql"""SELECT DISTINCT actorguid FROM sessioninteractionswithautoincrementid WHERE actorguid LIKE '%@lsf'"""
       .as[Query[ActorGuidRow]]
   }
 

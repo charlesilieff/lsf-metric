@@ -45,8 +45,8 @@ object Spark:
     val firstAndLastSessionDF = firstAndLastSession(sessionIds)
     val all                   =
       countSessionDF.join(averageSessionTimeDF, "userId").join(firstAndLastSessionDF, "userId").as[(String, Long, Double, String, Long)]
-    all.show()
-    val result                = all.collect
+
+    val result = all.collect
 
     // val durationInSeconds = LocalTime.parse(result._3).toSecondOfDay
 
