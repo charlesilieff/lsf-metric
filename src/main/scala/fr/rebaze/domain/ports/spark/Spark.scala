@@ -18,21 +18,25 @@ object Spark:
 
   spark.sparkContext.setLogLevel("OFF")
 
-  def eventSequenceByUserId(actorGuid: ActorGuid): DataFrame =
+  def eventSequenceByUserId(actorGuids: Iterable[ActorGuid]): DataFrame =
+    val actorGuidString = actorGuids.mkString("'", "', '", "'")
     spark
       .read
       .format("jdbc")
       .option("url", "jdbc:postgresql://localhost:35432/backendquery")
       .option("user", "username")
       .option("password", "password")
-      .option("query", s"select * from public.sessioninteractionswithautoincrementid where actorguid = '$actorGuid'")
+      .option(
+        "query",
+        s"WITH actor_guids AS (SELECT unnest(ARRAY[$actorGuidString]) AS actor_guid) select * from public.sessioninteractionswithautoincrementid WHERE actorguid IN (SELECT actor_guid FROM actor_guids)"
+      )
       .load()
 
   //  // 5 minutes in milliseconds
   val TIME_OUT = 300000
 
-  def getSessionTimeByUserId(actorGuid: ActorGuid): UserSessionsTime =
-    val dataFrame            = eventSequenceByUserId(actorGuid)
+  def getSessionTimeByActorGuids(actorGuids: Iterable[ActorGuid]): Iterable[UserSessionsTime] =
+    val dataFrame            = eventSequenceByUserId(actorGuids)
     val events               = getEventsByUserId(dataFrame)
     val sessionIds           = runTransformation(TIME_OUT)(events)
     val countSessionDF       = countSession(sessionIds)
@@ -42,14 +46,11 @@ object Spark:
     val all                   =
       countSessionDF.join(averageSessionTimeDF, "userId").join(firstAndLastSessionDF, "userId").as[(String, Long, Double, String, Long)]
     all.show()
-    val result                = all.collect.head
+    val result                = all.collect
 
     // val durationInSeconds = LocalTime.parse(result._3).toSecondOfDay
 
-    val userTimeSession =
-      UserSessionsTime(result._1, result._2, result._3.toLong, result._4, result._5)
-
-    userTimeSession
+    result.map(result => UserSessionsTime(ActorGuid(result._1), result._2, result._3.toLong, result._4, result._5))
 //  def getZIOSessionTimeByUserId(userId: String): UserSessionsTime =
 //    val schemaInteraction = new StructType()
 //      .add("ruleId", StringType, true)

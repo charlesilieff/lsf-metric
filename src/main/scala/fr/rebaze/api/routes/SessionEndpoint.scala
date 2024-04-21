@@ -26,29 +26,35 @@ object SessionEndpoint:
       .out(jsonBody[Iterable[SessionMetric]])
 
   val sessionLive: ZServerEndpoint[MetricsService, Any] = findOneGuid.serverLogicSuccess { localDate =>
-       for
+    for
 
-        allUserProgress <- MetricsService.getActorsProgressByDay(localDate)
-        _               <- ZIO.logInfo(s"Starting processing ${allUserProgress.size} users !")
-        results         <- ZIO
-                             .foreachPar(allUserProgress)(session =>
-                               for {
-                                 _ <- ZIO.logInfo(s"Spark processing session for actor ${session.actorGuid}")
-
-                                 sessionDuration = Spark.getSessionTimeByUserId(session.actorGuid)
-                                 _ <- ZIO.logInfo(s"Spark processed session for actor ${session.actorGuid} !")
-                               } yield SessionMetric(
-                                 userId = session.actorGuid,
-                                 trainingDuration = (sessionDuration.averageSessionTime * sessionDuration.sessionCount),
-                                 completionPercentage = session.completionPercentage,
-                                 lastUseDate = sessionDuration.lastSession,
-                                 levelsProgress = session
-                                   .levelProgress.map[(String, LevelProgressAndDuration)](pp =>
-                                     pp.levelId.toString -> LevelProgressAndDuration(
-                                       pp.completionPercentage,
-                                       pp.rules.map((ruleId, answer) => (ruleId.toString, answer)))).toMap
-                               )).withParallelism(4)
-        _               <- ZIO.logInfo(s"Processed ${results.size} sessions !!")
-      yield results
-    }
+      _                      <- ZIO.logInfo(s"Starting processing ${localDate} users !")
+      allUserProgress        <- MetricsService.getActorsProgressByDay(localDate)
+      _                      <- ZIO.logInfo(s"Processed progress for ${allUserProgress.size} users !")
+      _                      <- ZIO.logInfo(s"Spark processing session for actors ${allUserProgress.size}")
+      allActorsSessionTime    = Spark.getSessionTimeByActorGuids(allUserProgress.map(_.actorGuid))
+      _                      <- ZIO.logInfo(s"Spark processed session for actor ${allUserProgress.size} !")
+      allUserProgressMap      = allUserProgress.map(user => user.actorGuid -> user).toMap
+      allActorsSessionTimeMap = allActorsSessionTime.map(user => user.actorGuid -> user).toMap
+      results                 =
+        allActorsSessionTimeMap
+          .keySet.map(actorGuid =>
+            val actorProgress    = allUserProgressMap(actorGuid)
+            val actorSession     = allActorsSessionTimeMap(actorGuid)
+            val trainingDuration = actorSession.averageSessionTime * actorSession.sessionCount
+            SessionMetric(
+              userId = actorGuid,
+              trainingDuration = trainingDuration,
+              completionPercentage = actorProgress.completionPercentage,
+              lastUseDate = actorSession.lastSession,
+              levelsProgress = actorProgress
+                .levelProgress.map[(String, LevelProgressAndDuration)](pp =>
+                  pp.levelId.toString -> LevelProgressAndDuration(
+                    pp.completionPercentage,
+                    pp.rules.map((ruleId, answer) => (ruleId.toString, answer)))).toMap
+            )
+          )
+      _                      <- ZIO.logInfo(s"Processed ${results.size} sessions !!")
+    yield results
+  }
   // private def SessionNotFoundMessage(guid: String): String = s"Session with guid ${guid} doesn't exist."
