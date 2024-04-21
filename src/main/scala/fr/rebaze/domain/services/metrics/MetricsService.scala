@@ -8,15 +8,15 @@ import zio.nio.file.Path
 import java.time.LocalDate
 
 trait MetricsService:
-  def getActorsProgressByDay(day: LocalDate): Task[Iterable[ActorProgress]]
+  def getActorsProgressByDay(day: LocalDate): Task[Map[ActorGuid, ActorProgress]]
   def extractLevelIdsFromJsonDirectExport(path: Path = Path("/src/main/resources/rules/")): Task[Iterable[LevelId]]
   def getGlobalProgressByActorGuid(actorGuid: ActorGuid, path: Path = Path("/src/main/resources/rules/")): Task[Double]
   def getLevelIdsByActorGuidByDay(actorGuid: ActorGuid, day: LocalDate): Task[Iterable[String]]
 object MetricsService:
-  def getActorsProgressByDay(day: LocalDate): RIO[MetricsService, Iterable[ActorProgress]]                                          =
+  def getActorsProgressByDay(day: LocalDate): RIO[MetricsService, Map[ActorGuid, ActorProgress]]                                       =
     ZIO
       .serviceWithZIO[MetricsService](_.getActorsProgressByDay(day))
-  def extractLevelIdsFromJsonDirectExport(path: Path = Path("/src/main/resources/rules/")): RIO[MetricsService, Iterable[LevelId]]   =
+  def extractLevelIdsFromJsonDirectExport(path: Path = Path("/src/main/resources/rules/")): RIO[MetricsService, Iterable[LevelId]]     =
     ZIO.serviceWithZIO[MetricsService](_.extractLevelIdsFromJsonDirectExport(path))
   def getGlobalProgressByActorGuid(actorGuid: ActorGuid, path: Path = Path("/src/main/resources/rules/")): RIO[MetricsService, Double] =
     ZIO.serviceWithZIO[MetricsService](_.getGlobalProgressByActorGuid(actorGuid, path))

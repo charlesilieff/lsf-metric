@@ -47,7 +47,7 @@ final case class MetricsServiceLive(
         } yield levelIds
     }
 
-  override def getActorsProgressByDay(day: LocalDate): Task[Iterable[ActorProgress]] =
+  override def getActorsProgressByDay(day: LocalDate): Task[Map[ActorGuid, ActorProgress]] =
     for {
       actorGuids                         <- sessionRepository.getActorGuidsByDay(day)
       _                                  <- ZIO.logInfo(s"Starting get users global progress for date ${day} and ${actorGuids.size} actors !")
@@ -72,14 +72,14 @@ final case class MetricsServiceLive(
                                                          completionPercentage = levelProgress.completionPercentage,
                                                          rulesTrainingIdsWithAnswer
                                                        ))
-                   } yield ActorProgress(
-                     actorGuid = userLevelProgressAndRulesAnswers.actorGuid,
+                   } yield (userLevelProgressAndRulesAnswers.actorGuid,ActorProgress(
+                 
                      actorGlobalProgress,
                      levelProgress
-                   )
+                   ))
                  }
       _       <- ZIO.logInfo(s" Global progress for $day and ${actorLevelsProgressAndRulesAnswers.size} users calculated !")
-    } yield metrics.toSeq
+    } yield metrics.toMap
 
   override def getGlobalProgressByActorGuid(actorGuid: ActorGuid, path: Path = Path("/src/main/resources/rules/")): Task[Double] =
     for {

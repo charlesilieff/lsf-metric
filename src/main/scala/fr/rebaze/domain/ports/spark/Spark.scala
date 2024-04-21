@@ -35,7 +35,7 @@ object Spark:
   //  // 5 minutes in milliseconds
   val TIME_OUT = 300000
 
-  def getSessionTimeByActorGuids(actorGuids: Iterable[ActorGuid]): Iterable[UserSessionsTime] =
+  def getSessionTimeByActorGuids(actorGuids: Iterable[ActorGuid]): Map[ActorGuid,UserSessionsTime] =
     val dataFrame            = eventSequenceByUserId(actorGuids)
     val events               = getEventsByUserId(dataFrame)
     val sessionIds           = runTransformation(TIME_OUT)(events)
@@ -50,7 +50,7 @@ object Spark:
 
     // val durationInSeconds = LocalTime.parse(result._3).toSecondOfDay
 
-    result.map(result => UserSessionsTime(ActorGuid(result._1), result._2, result._3.toLong, result._4, result._5))
+    result.map(result => (ActorGuid(result._1),UserSessionsTime( result._2, result._3.toLong, result._4, result._5))).toMap
 //  def getZIOSessionTimeByUserId(userId: String): UserSessionsTime =
 //    val schemaInteraction = new StructType()
 //      .add("ruleId", StringType, true)
