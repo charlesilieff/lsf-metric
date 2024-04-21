@@ -7,8 +7,8 @@ import zio.test.{ZIOSpecDefault, assertZIO}
 import java.time.LocalDateTime
 import scala.collection.immutable.SortedMap
 
-def buildRuleMapInOrder(list: List[Boolean]): SortedMap[LocalDateTime, Boolean] =
-  SortedMap.from(list.zipWithIndex.map { case (b, i) => LocalDateTime.now().plusSeconds(i) -> b })
+def buildRuleMapInOrder(list: List[Boolean]): SortedMap[Long, Boolean] =
+  SortedMap.from(list.zipWithIndex.map { case (b, i) => (1000 + i).toLong -> b })
 
 object EngineSpec extends ZIOSpecDefault:
   val now  = LocalDateTime.now()

@@ -2,7 +2,6 @@ package fr.rebaze.domain.ports.engine
 
 import zio.{Task, ULayer, ZIO, ZLayer}
 
-import java.time.LocalDateTime
 import scala.collection.immutable.SortedMap
 
 enum Sate:
@@ -22,7 +21,7 @@ object EngineLive:
   val layer: ULayer[EngineLive] =
     ZLayer.succeed(EngineLive())
 final case class EngineLive() extends Engine:
-  private def updateRuleState(acc: RuleState, entry: (LocalDateTime, Boolean)): RuleState = acc.state match {
+  private def updateRuleState(acc: RuleState, entry: (Long, Boolean)): RuleState = acc.state match {
     case Sate.LAST      => acc
     case _ if !entry._2 => RuleState(acc.timeError + 1, acc.timeOk, Sate.ERROR)
     case Sate.NEVER     => RuleState(acc.timeError, acc.timeOk + 1, Sate.FOUR)
@@ -34,7 +33,7 @@ final case class EngineLive() extends Engine:
       RuleState(acc.timeError, acc.timeOk + 1, state(boxIndex))
   }
 
-  override def isRuleLearned(ruleInteractions: SortedMap[LocalDateTime, Boolean]): Task[Boolean] =
+  override def isRuleLearned(ruleInteractions: SortedMap[Long, Boolean]): Task[Boolean] =
     ZIO.succeed(
       ruleInteractions
         .foldLeft(RuleState(0, 0, Sate.NEVER))(updateRuleState).state == Sate.LAST)

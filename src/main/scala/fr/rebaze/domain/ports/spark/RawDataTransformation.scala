@@ -40,10 +40,10 @@ object RawDataTransformation:
           .cast("Timestamp")
           .as("averageSessionTime")
       )
-      .withColumn(
-        "averageSessionTime",
-        date_format(col("averageSessionTime"), "HH:mm:ss")
-      )
+//      .withColumn(
+//        "averageSessionTime",
+//        date_format(col("averageSessionTime"), "HH:mm:ss")
+//      )
 //
   def firstAndLastSession(dataFrame: Dataset[SessionIdsByUserId]): DataFrame =
     dataFrame

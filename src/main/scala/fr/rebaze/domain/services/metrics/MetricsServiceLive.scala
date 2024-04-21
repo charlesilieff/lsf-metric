@@ -2,7 +2,7 @@ package fr.rebaze.domain.services.metrics
 
 import fr.rebaze.domain.ports.engine.Engine
 import fr.rebaze.domain.ports.repository.SessionRepository
-import fr.rebaze.domain.ports.repository.models.{RuleId,LevelId}
+import fr.rebaze.domain.ports.repository.models.LevelId
 import fr.rebaze.domain.services.metrics.errors.Exceptions.NotFound
 import fr.rebaze.domain.services.metrics.models.{ActorProgress, Application, LevelProgress}
 import zio.json.{DecoderOps, JsonDecoder}
@@ -11,7 +11,7 @@ import zio.nio.file.{Files, Path}
 import zio.{Ref, Task, ZIO, ZLayer}
 
 import java.net.URI
-import java.time.{Instant, LocalDate, LocalDateTime, ZoneId}
+import java.time.LocalDate
 
 object MetricsServiceLive:
   val layer: ZLayer[SessionRepository & Engine, Nothing, MetricsServiceLive] =
@@ -35,15 +35,15 @@ final case class MetricsServiceLive(
 
         val filePaths = fileNames.map(name => URI.create(s"file:///$currentPath$path/$name"))
         for {
-          files <- ZIO
-                     .foreachPar(filePaths)(filePath => Files.readAllBytes(Path(filePath))).mapBoth(
-                       e => NotFound(e.getMessage),
-                       bytes => bytes.map(byte => new String(byte.toArray, "UTF-8")))
+          files    <- ZIO
+                        .foreachPar(filePaths)(filePath => Files.readAllBytes(Path(filePath))).mapBoth(
+                          e => NotFound(e.getMessage),
+                          bytes => bytes.map(byte => new String(byte.toArray, "UTF-8")))
           levelIds <- ZIO
-                     .foreachPar(files)(file => ZIO.fromEither(file.fromJson[Application]).mapError(e => NotFound(e))).map(files =>
-                       files.map(_.levels)).map(files => files.flatMap(_.map(_.guid)))
-          _     <- rulesRef.set(Some(levelIds))
-          _     <- ZIO.logInfo(s"LevelIds extracted: ${levelIds.size}")
+                        .foreachPar(files)(file => ZIO.fromEither(file.fromJson[Application]).mapError(e => NotFound(e))).map(files =>
+                          files.map(_.levels)).map(files => files.flatMap(_.map(_.guid)))
+          _        <- rulesRef.set(Some(levelIds))
+          _        <- ZIO.logInfo(s"LevelIds extracted: ${levelIds.size}")
         } yield levelIds
     }
 
@@ -56,21 +56,16 @@ final case class MetricsServiceLive(
 
       metrics <- ZIO.foreach(userLevelsProgressAndRulesAnswers) { userLevelsProgressAndRulesAnswers =>
                    for {
-                     globalProgress             <- getGlobalProgressByActorGuid(userLevelsProgressAndRulesAnswers.actorGuid)
+                     actorGlobalProgress        <- getGlobalProgressByActorGuid(userLevelsProgressAndRulesAnswers.actorGuid)
+                     rulesWithTimestampedAnswers =
+                       userLevelsProgressAndRulesAnswers
+                         .levelProgress.flatMap(value => value.rulesAnswers).map((ruleId, ruleAnswers) =>
+                           (ruleId, engine.isRuleLearned(ruleAnswers)))
                      rulesTrainingIdsWithAnswer <-
-                       ZIO.foreach(
-                         userLevelsProgressAndRulesAnswers
-                           .levelProgress.flatMap(value =>
-                             value
-                               .rulesAnswers.map((ruleId, ruleAnswers) =>
-                                 (
-                                   ruleId,
-                                   engine.isRuleLearned(ruleAnswers.map((time, answer) =>
-                                     (LocalDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneId.systemDefault()), answer)))))))(
-                         (toto, tata) => tata.map(tyty => (toto, tyty)))
+                       ZIO.foreach(rulesWithTimestampedAnswers)((toto, tata) => tata.map(tyty => (toto, tyty)))
                    } yield ActorProgress(
                      actorGuid = userLevelsProgressAndRulesAnswers.actorGuid,
-                     globalProgress,
+                     actorGlobalProgress,
                      levelProgress = userLevelsProgressAndRulesAnswers
                        .levelProgress.map(levelProgress =>
                          LevelProgress(
