@@ -2,7 +2,15 @@ package fr.rebaze.domain.ports.repository
 
 import fr.rebaze.domain.ports.models.LevelsProgressByActorGuid
 import fr.rebaze.domain.ports.repository.models.row.*
-import fr.rebaze.domain.ports.repository.models.{ActorGuid, Interaction, LevelId, LevelProgressRepo, RuleId, UserLevelsProgressAndRulesAnswers, Session as SessionModel}
+import fr.rebaze.domain.ports.repository.models.{
+  ActorGuid,
+  Interaction,
+  LevelId,
+  LevelProgressRepo,
+  RuleId,
+  UserLevelsProgressAndRulesAnswers,
+  Session as SessionModel
+}
 import fr.rebaze.models.UserFirstnameAndLastname
 import io.getquill.*
 import io.getquill.jdbczio.Quill
@@ -43,12 +51,12 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
     }
 
   private def actorRow(millisecondsTimestamp: Long): Quoted[Query[ActorGuidRow]] = quote {
-//    sql"""SELECT DISTINCT actorguid FROM sessioninteractionswithautoincrementid WHERE
-//             ((interaction->>'timestamp')::bigint > ${lift(millisecondsTimestamp)} AND (interaction->>'timestamp')::bigint < ${lift(
-//        millisecondsTimestamp + MILLI_SECONDS_IN_DAY)} AND actorguid LIKE '%@lsf')"""
-//      .as[Query[ActorGuidRow]]
-    sql"""SELECT DISTINCT actorguid FROM sessioninteractionswithautoincrementid WHERE actorguid LIKE '%@lsf'"""
+    sql"""SELECT DISTINCT actorguid FROM sessioninteractionswithautoincrementid WHERE
+             ((interaction->>'timestamp')::bigint > ${lift(millisecondsTimestamp)} AND (interaction->>'timestamp')::bigint < ${lift(
+        millisecondsTimestamp + MILLI_SECONDS_IN_DAY)} AND actorguid LIKE '%@lsf')"""
       .as[Query[ActorGuidRow]]
+//    sql"""SELECT DISTINCT actorguid FROM sessioninteractionswithautoincrementid WHERE actorguid LIKE '%@lsf'"""
+//      .as[Query[ActorGuidRow]]
   }
 
   private def levelProgressAndActorGuidRow(actorGuid: ActorGuid): Quoted[Query[ActorAndInteractionRow]] = quote {
@@ -70,10 +78,11 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
           val levelsProgress = userAndLevelAndInteraction
             ._2.foldLeft[Seq[(LevelId, Double, Option[Long], Map[RuleId, SortedMap[Long, Boolean]])]](Seq.empty) {
               case (acc, userAndInteraction) =>
-                val completionDate  = if(userAndInteraction.interaction.value.progress.contains(1.0)) then Some(userAndInteraction.interaction.value.timestamp) else None
+                val completionDate =
+                  if userAndInteraction.interaction.value.progress.contains(1.0) then Some(userAndInteraction.interaction.value.timestamp)
+                  else None
                 acc.find(_._1 == userAndInteraction.levelGuid) match {
                   case Some((levelId, maxProgress, completionDate, rulesAnswers)) =>
-                    
                     val newRulesAnswers = rulesAnswers.updatedWith(userAndInteraction.interaction.value.ruleId) {
                       case Some(ruleAnswers) =>
                         Some(ruleAnswers + (userAndInteraction
@@ -82,9 +91,9 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
                         Some(SortedMap(userAndInteraction.interaction.value.timestamp -> userAndInteraction.interaction.value.correct))
                     }
                     if (userAndInteraction.interaction.value.progress.getOrElse(0d) > maxProgress)
-                      (levelId, userAndInteraction.interaction.value.progress.getOrElse(0d),None, newRulesAnswers) +: acc.filterNot(
+                      (levelId, userAndInteraction.interaction.value.progress.getOrElse(0d), None, newRulesAnswers) +: acc.filterNot(
                         _._1 == levelId)
-                    else (levelId, maxProgress,completionDate, newRulesAnswers) +: acc.filterNot(_._1 == levelId)
+                    else (levelId, maxProgress, completionDate, newRulesAnswers) +: acc.filterNot(_._1 == levelId)
                   case None                                                       =>
                     (
                       userAndInteraction.levelGuid,
@@ -99,7 +108,9 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
 
           UserLevelsProgressAndRulesAnswers(
             userAndLevelAndInteraction._1,
-            levelsProgress.map((ruleId, progress,completionDate, rulesAnswers) => LevelProgressRepo(ruleId, progress, rulesAnswers,completionDate)))
+            levelsProgress.map((ruleId, progress, completionDate, rulesAnswers) =>
+              LevelProgressRepo(ruleId, progress, rulesAnswers, completionDate))
+          )
         ))
 
   override def getUsersNameAndFirstName(actorGuid: ActorGuid): Task[UserFirstnameAndLastname] =

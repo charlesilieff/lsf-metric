@@ -1,12 +1,11 @@
 package fr.rebaze.domain.ports.engine
 
-import zio.{RIO, Task, ZIO}
-
+import zio.{RIO, ZIO}
 
 import scala.collection.immutable.SortedMap
 
 trait Engine:
-  def isRuleLearned(ruleInteractions: SortedMap[Long, Boolean]): Task[Boolean]
+  def isRuleLearned(ruleInteractions: SortedMap[Long, Boolean]): Boolean
 object Engine:
   def isRuleLearned(ruleInteractions: SortedMap[Long, Boolean]): RIO[Engine, Boolean] =
-    ZIO.serviceWithZIO[Engine](_.isRuleLearned(ruleInteractions))
+    ZIO.serviceWith[Engine](_.isRuleLearned(ruleInteractions))

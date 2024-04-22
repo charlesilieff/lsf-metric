@@ -8,9 +8,15 @@ case class SessionMetric(
   trainingDuration: Long,
   completionPercentage: Double,
   lastUseDate: Long,
+  knownRulesNbr: Int,
+  totalRulesNbr: Int,
   levelsProgress: Map[String, LevelProgressAndDuration])
 
-case class LevelProgressAndDuration(completionPercentage: Double, rules: Map[String, Boolean], completionDate: Option[Long])
+case class LevelProgressAndDuration(
+  completionPercentage: Double,
+  rules: Map[String, Boolean],
+  completionDate: Option[Long]
+)
 
 object LevelProgressAndDuration:
   given sessionZioEncoder: zio.json.JsonEncoder[LevelProgressAndDuration] = DeriveJsonEncoder.gen[LevelProgressAndDuration]

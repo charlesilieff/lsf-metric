@@ -51,10 +51,12 @@ object SessionEndpoint:
                     pp.completionPercentage,
                     pp.rules.map((ruleId, answer) => (ruleId.toString, answer)),
                     pp.completionDate
-                  )).toMap
+                  )).toMap,
+              totalRulesNbr = actorProgress.totalRulesNbr,
+              knownRulesNbr = actorProgress.knownRulesNbr
             )
           )
       _                      <- ZIO.logInfo(s"Processed ${results.size} sessions !!")
-    yield results
+    yield results.take(3)
   }
   // private def SessionNotFoundMessage(guid: String): String = s"Session with guid ${guid} doesn't exist."

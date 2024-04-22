@@ -1,6 +1,6 @@
 package fr.rebaze.domain.ports.engine
 
-import zio.{Task, ULayer, ZIO, ZLayer}
+import zio.{ULayer, ZLayer}
 
 import scala.collection.immutable.SortedMap
 
@@ -33,7 +33,6 @@ final case class EngineLive() extends Engine:
       RuleState(acc.timeError, acc.timeOk + 1, state(boxIndex))
   }
 
-  override def isRuleLearned(ruleInteractions: SortedMap[Long, Boolean]): Task[Boolean] =
-    ZIO.succeed(
-      ruleInteractions
-        .foldLeft(RuleState(0, 0, Sate.NEVER))(updateRuleState).state == Sate.LAST)
+  override def isRuleLearned(ruleInteractions: SortedMap[Long, Boolean]): Boolean =
+    ruleInteractions
+      .foldLeft(RuleState(0, 0, Sate.NEVER))(updateRuleState).state == Sate.LAST
