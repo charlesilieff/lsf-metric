@@ -67,10 +67,12 @@ final case class MetricsServiceLive(
                        ZIO.foreach(rulesWithTimestampedAnswers)((ruleId, answer) => answer.map(answer => (ruleId, answer))).map(_.toMap)
                      levelProgress               = userLevelProgressAndRulesAnswers
                                                      .levelProgress.map(levelProgress =>
+                         
                                                        LevelProgress(
                                                          levelId = levelProgress._1,
                                                          completionPercentage = levelProgress.completionPercentage,
-                                                         rulesTrainingIdsWithAnswer
+                                                         completionDate= levelProgress.completionDate,
+                                                         rules=rulesTrainingIdsWithAnswer
                                                        ))
                    } yield (userLevelProgressAndRulesAnswers.actorGuid,ActorProgress(
                   

@@ -29,10 +29,10 @@ object SessionEndpoint:
     for
 
       _                      <- ZIO.logInfo(s"Starting processing ${localDate} users !")
-      allUserProgressMap        <- MetricsService.getActorsProgressByDay(localDate)
+      allUserProgressMap     <- MetricsService.getActorsProgressByDay(localDate)
       _                      <- ZIO.logInfo(s"Processed progress for ${allUserProgressMap.size} users !")
       _                      <- ZIO.logInfo(s"Spark processing session for actors ${allUserProgressMap.size}")
-      allActorsSessionTimeMap    = Spark.getSessionTimeByActorGuids(allUserProgressMap.keySet)
+      allActorsSessionTimeMap = Spark.getSessionTimeByActorGuids(allUserProgressMap.keySet)
       _                      <- ZIO.logInfo(s"Spark processed session for actor ${allUserProgressMap.size} !")
       results                 =
         allActorsSessionTimeMap
@@ -49,7 +49,9 @@ object SessionEndpoint:
                 .levelProgress.map[(String, LevelProgressAndDuration)](pp =>
                   pp.levelId.toString -> LevelProgressAndDuration(
                     pp.completionPercentage,
-                    pp.rules.map((ruleId, answer) => (ruleId.toString, answer)))).toMap
+                    pp.rules.map((ruleId, answer) => (ruleId.toString, answer)),
+                    pp.completionDate
+                  )).toMap
             )
           )
       _                      <- ZIO.logInfo(s"Processed ${results.size} sessions !!")

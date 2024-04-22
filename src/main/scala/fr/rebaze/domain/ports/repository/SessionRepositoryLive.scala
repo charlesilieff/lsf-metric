@@ -68,10 +68,12 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
         _.groupBy(_.actorGuid).map(userAndLevelAndInteraction =>
 
           val levelsProgress = userAndLevelAndInteraction
-            ._2.foldLeft[Seq[(LevelId, Double, Map[RuleId, SortedMap[Long, Boolean]])]](Seq.empty) {
+            ._2.foldLeft[Seq[(LevelId, Double, Option[Long], Map[RuleId, SortedMap[Long, Boolean]])]](Seq.empty) {
               case (acc, userAndInteraction) =>
+                val completionDate  = if(userAndInteraction.interaction.value.progress.contains(1.0)) then Some(userAndInteraction.interaction.value.timestamp) else None
                 acc.find(_._1 == userAndInteraction.levelGuid) match {
-                  case Some((levelId, maxProgress, rulesAnswers)) =>
+                  case Some((levelId, maxProgress, completionDate, rulesAnswers)) =>
+                    
                     val newRulesAnswers = rulesAnswers.updatedWith(userAndInteraction.interaction.value.ruleId) {
                       case Some(ruleAnswers) =>
                         Some(ruleAnswers + (userAndInteraction
@@ -80,13 +82,14 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
                         Some(SortedMap(userAndInteraction.interaction.value.timestamp -> userAndInteraction.interaction.value.correct))
                     }
                     if (userAndInteraction.interaction.value.progress.getOrElse(0d) > maxProgress)
-                      (levelId, userAndInteraction.interaction.value.progress.getOrElse(0d), newRulesAnswers) +: acc.filterNot(
+                      (levelId, userAndInteraction.interaction.value.progress.getOrElse(0d),None, newRulesAnswers) +: acc.filterNot(
                         _._1 == levelId)
-                    else (levelId, maxProgress, newRulesAnswers) +: acc.filterNot(_._1 == levelId)
-                  case None                                       =>
+                    else (levelId, maxProgress,completionDate, newRulesAnswers) +: acc.filterNot(_._1 == levelId)
+                  case None                                                       =>
                     (
                       userAndInteraction.levelGuid,
                       userAndInteraction.interaction.value.progress.getOrElse(0),
+                      completionDate,
                       Map(
                         userAndInteraction.interaction.value.ruleId ->
                           SortedMap(userAndInteraction.interaction.value.timestamp -> userAndInteraction.interaction.value.correct)
@@ -96,7 +99,7 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
 
           UserLevelsProgressAndRulesAnswers(
             userAndLevelAndInteraction._1,
-            levelsProgress.map((ruleId, progress, rulesAnswers) => LevelProgressRepo(ruleId, progress, rulesAnswers)))
+            levelsProgress.map((ruleId, progress,completionDate, rulesAnswers) => LevelProgressRepo(ruleId, progress, rulesAnswers,completionDate)))
         ))
 
   override def getUsersNameAndFirstName(actorGuid: ActorGuid): Task[UserFirstnameAndLastname] =
