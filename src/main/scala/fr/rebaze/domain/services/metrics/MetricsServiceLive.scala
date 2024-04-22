@@ -61,20 +61,24 @@ final case class MetricsServiceLive(
                      actorGlobalProgress       <- getGlobalProgressByActorGuid(userLevelProgressAndRulesAnswers.actorGuid)
                      rulesTrainingIdsWithAnswer =
                        userLevelProgressAndRulesAnswers
-                         .levelProgress.flatMap(value => value.rulesAnswers).map((ruleId, ruleAnswers) =>
-                           (ruleId, engine.isRuleLearned(ruleAnswers))).toMap
+                         .levelProgress.flatMap(value => value._2.rulesAnswers).map((ruleId, ruleAnswers) =>
+                           (ruleId, engine.isRuleLearned(ruleAnswers)))
 
-                     levelProgress = userLevelProgressAndRulesAnswers
-                                       .levelProgress.map(levelProgress =>
-                                         val rules = levelProgress.rulesAnswers.map((ruleId, ruleAnswers) =>
-                                           (ruleId, engine.isRuleLearned(ruleAnswers))).toMap
-                                         LevelProgress(
-                                           levelId = levelProgress._1,
-                                           completionPercentage = levelProgress.completionPercentage,
-                                           completionDate = levelProgress.completionDate,
-                                           rules = rules
-                                         ))
-                                       
+                     levelProgress =
+                       userLevelProgressAndRulesAnswers
+                         .levelProgress.map(levelProgress =>
+                           val rules =
+                             levelProgress._2.rulesAnswers.map((ruleId, ruleAnswers) => (ruleId, engine.isRuleLearned(ruleAnswers)))
+                           (
+                             levelProgress._1,
+                             LevelProgress(
+                               levelId = levelProgress._1,
+                               completionPercentage = levelProgress._2.completionPercentage,
+                               completionDate = levelProgress._2.completionDate,
+                               rules = rules
+                             ))
+                         )
+
                    } yield (
                      userLevelProgressAndRulesAnswers.actorGuid,
                      ActorProgress(

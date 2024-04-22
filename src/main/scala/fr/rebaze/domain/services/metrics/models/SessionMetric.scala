@@ -14,8 +14,8 @@ case class SessionMetric(
 
 case class LevelProgressAndDuration(
   completionPercentage: Double,
-  rules: Map[String, Boolean],
-  completionDate: Option[Long]
+  completionDate: Option[Long],
+  rules: Map[String, Boolean]
 )
 
 object LevelProgressAndDuration:

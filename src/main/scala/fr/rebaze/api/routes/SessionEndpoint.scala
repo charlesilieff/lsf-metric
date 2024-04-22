@@ -46,12 +46,12 @@ object SessionEndpoint:
               completionPercentage = actorProgress.completionPercentage,
               lastUseDate = actorSession.lastSession,
               levelsProgress = actorProgress
-                .levelProgress.map[(String, LevelProgressAndDuration)](pp =>
-                  pp.levelId.toString -> LevelProgressAndDuration(
-                    pp.completionPercentage,
-                    pp.rules.map((ruleId, answer) => (ruleId.toString, answer)),
-                    pp.completionDate
-                  )).toMap,
+                .levelProgress.map(pp =>
+                  pp._1.toString -> LevelProgressAndDuration(
+                    pp._2.completionPercentage,
+                    pp._2.completionDate,
+                    pp._2.rules.map((ruleId, answer) => (ruleId.toString, answer))
+                  )),
               totalRulesNbr = actorProgress.totalRulesNbr,
               knownRulesNbr = actorProgress.knownRulesNbr
             )

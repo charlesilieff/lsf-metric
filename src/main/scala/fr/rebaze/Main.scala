@@ -45,4 +45,3 @@ object Main extends ZIOAppDefault:
         Server.defaultWithPort(port),
         Layer.prodLayer
       )
-      .exitCode
