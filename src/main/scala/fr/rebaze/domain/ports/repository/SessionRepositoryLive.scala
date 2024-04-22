@@ -2,15 +2,7 @@ package fr.rebaze.domain.ports.repository
 
 import fr.rebaze.domain.ports.models.LevelsProgressByActorGuid
 import fr.rebaze.domain.ports.repository.models.row.*
-import fr.rebaze.domain.ports.repository.models.{
-  ActorGuid,
-  Interaction,
-  LevelId,
-  LevelProgressRepo,
-  RuleId,
-  UserLevelsProgressAndRulesAnswers,
-  Session as SessionModel
-}
+import fr.rebaze.domain.ports.repository.models.{ActorGuid, Interaction, LevelId, LevelProgressAndRulesAnswerRepo, UserLevelsProgressAndRulesAnswers, Session as SessionModel}
 import fr.rebaze.models.UserFirstnameAndLastname
 import io.getquill.*
 import io.getquill.jdbczio.Quill
@@ -70,46 +62,52 @@ final case class SessionRepositoryLive(quill: Quill.Postgres[CamelCase]) extends
         values
           .map(session => new SessionModel(session.guid, actorGuid = session.actorGuid, session.levelGuid, session.interaction.value)))
 
+  def updateLevelsProgress(
+    acc: Seq[LevelProgressAndRulesAnswerRepo],
+    userAndInteraction: ActorAndInteractionAndLevelGuidRow): Seq[LevelProgressAndRulesAnswerRepo] = {
+    val completionDate =
+      if (userAndInteraction.interaction.value.progress.contains(1.0)) Some(userAndInteraction.interaction.value.timestamp) else None
+
+    acc.find(_._1 == userAndInteraction.levelGuid) match {
+      case Some(LevelProgressAndRulesAnswerRepo(levelId, maxProgress, rulesAnswers, _)) =>
+        val newRulesAnswers = rulesAnswers.updatedWith(userAndInteraction.interaction.value.ruleId) {
+          case Some(ruleAnswers) =>
+            Some(ruleAnswers + (userAndInteraction.interaction.value.timestamp -> userAndInteraction.interaction.value.correct))
+          case None              =>
+            Some(SortedMap(userAndInteraction.interaction.value.timestamp -> userAndInteraction.interaction.value.correct))
+        }
+        if (userAndInteraction.interaction.value.progress.getOrElse(0d) > maxProgress)
+          LevelProgressAndRulesAnswerRepo(
+            levelId,
+            userAndInteraction.interaction.value.progress.getOrElse(0d),
+            newRulesAnswers,
+            completionDate) +: acc
+            .filterNot(_._1 == levelId)
+        else
+          LevelProgressAndRulesAnswerRepo(levelId, maxProgress, newRulesAnswers, completionDate) +: acc.filterNot(_._1 == levelId)
+      case None                                                                         =>
+        LevelProgressAndRulesAnswerRepo(
+          userAndInteraction.levelGuid,
+          userAndInteraction.interaction.value.progress.getOrElse(0),
+          Map(
+            userAndInteraction.interaction.value.ruleId -> SortedMap(
+              userAndInteraction.interaction.value.timestamp -> userAndInteraction.interaction.value.correct)),
+          completionDate
+        ) +: acc
+    }
+  }
+
   override def getActorsLevelsProgressAndRulesAnswers(actorGuids: Iterable[ActorGuid]): Task[Iterable[UserLevelsProgressAndRulesAnswers]] =
     run(allInteractionsForActorList(actorGuids))
       .tap(x => ZIO.logInfo(s"Found ${x.length} actors interactions for ${actorGuids.size} actors")).map(
         _.groupBy(_.actorGuid).map(userAndLevelAndInteraction =>
 
           val levelsProgress = userAndLevelAndInteraction
-            ._2.foldLeft[Seq[(LevelId, Double, Option[Long], Map[RuleId, SortedMap[Long, Boolean]])]](Seq.empty) {
-              case (acc, userAndInteraction) =>
-                val completionDate =
-                  if userAndInteraction.interaction.value.progress.contains(1.0) then Some(userAndInteraction.interaction.value.timestamp)
-                  else None
-                acc.find(_._1 == userAndInteraction.levelGuid) match {
-                  case Some((levelId, maxProgress, completionDate, rulesAnswers)) =>
-                    val newRulesAnswers = rulesAnswers.updatedWith(userAndInteraction.interaction.value.ruleId) {
-                      case Some(ruleAnswers) =>
-                        Some(ruleAnswers + (userAndInteraction
-                          .interaction.value.timestamp -> userAndInteraction.interaction.value.correct))
-                      case None              =>
-                        Some(SortedMap(userAndInteraction.interaction.value.timestamp -> userAndInteraction.interaction.value.correct))
-                    }
-                    if (userAndInteraction.interaction.value.progress.getOrElse(0d) > maxProgress)
-                      (levelId, userAndInteraction.interaction.value.progress.getOrElse(0d), None, newRulesAnswers) +: acc.filterNot(
-                        _._1 == levelId)
-                    else (levelId, maxProgress, completionDate, newRulesAnswers) +: acc.filterNot(_._1 == levelId)
-                  case None                                                       =>
-                    (
-                      userAndInteraction.levelGuid,
-                      userAndInteraction.interaction.value.progress.getOrElse(0),
-                      completionDate,
-                      Map(
-                        userAndInteraction.interaction.value.ruleId ->
-                          SortedMap(userAndInteraction.interaction.value.timestamp -> userAndInteraction.interaction.value.correct)
-                      )) +: acc
-                }
-            }
+            ._2.foldLeft[Seq[LevelProgressAndRulesAnswerRepo]](Seq.empty)(updateLevelsProgress)
 
           UserLevelsProgressAndRulesAnswers(
             userAndLevelAndInteraction._1,
-            levelsProgress.map((ruleId, progress, completionDate, rulesAnswers) =>
-              LevelProgressRepo(ruleId, progress, rulesAnswers, completionDate))
+            levelsProgress
           )
         ))
 
